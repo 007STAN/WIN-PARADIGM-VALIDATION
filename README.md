@@ -1,6 +1,6 @@
 # Warped Information Number (WIN) Paradigm — Validation Suite
 
-**Author:** Stanley Preschutti (Entropia Research Institute)  
+**Author:** Stanley Preschutti (Information Physics Institute,UK)  
 **Framework:** Open-Source Empirical & Theoretical Verification Pipeline
 
 ---
