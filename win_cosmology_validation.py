@@ -1,6 +1,6 @@
 """
 Warped Information Number (WIN) Paradigm — Observational Cosmology Validation Suite
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Cross-references large-scale structure scaling ratios and background 
 energy densities against empirical data releases from the ESA Euclid and Planck missions.
 """
