@@ -1,6 +1,6 @@
 """
 Warped Information Number (WIN) Paradigm — Dark Photon Validation Suite
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Audits dark photon kinetic mixing predictions (epsilon) against 
 accelerator exclusion limits (specifically NA64 and fixed-target bounds).
 """
