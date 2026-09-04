@@ -1,6 +1,6 @@
 """
 WIN Paradigm: 5D Warped Hierarchy & Higgs Mass Predictor
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Interactive Colab widget for computing 5D warped geometry hierarchy 
 resolution (kL = 38.44), A_5 Higgs mass prediction (126.09 GeV), and KK graviton resonance (1.52 TeV).
 """
