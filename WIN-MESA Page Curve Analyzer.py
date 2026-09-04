@@ -1,6 +1,6 @@
 """
 WIN Paradigm Colab Interactive Tool
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Jupyter/Colab native interactive widget for N=64 Majorana QIN Page curves.
 """
 
