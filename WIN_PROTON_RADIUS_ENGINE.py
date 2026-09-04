@@ -1,6 +1,6 @@
 """
 WIN Paradigm: Lepton-Substrate Polarization Engine (Proton Radius Puzzle)
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Interactive Colab widget for computing parameter-free lepton-flavor mass-dependent 
 charge radius shifts (resolving the muon vs electron proton radius discrepancy).
 """
