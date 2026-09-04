@@ -1,6 +1,6 @@
 """
 WIN Paradigm: Quantum Substrate Flicker (1/f Noise) Engine
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Interactive Colab widget for computing parameter-free 1/f noise power spectral 
 densities and Hooge parameter equivalents from microcanonical sector switching (S_0 ~ 0.232).
 """
