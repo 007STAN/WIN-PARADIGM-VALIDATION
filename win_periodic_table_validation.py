@@ -1,6 +1,6 @@
 """
 Warped Information Number (WIN) Paradigm — Periodic Table Validation Suite
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Tests the corrected mass formula and IDR function across the 
 periodic table (Z = 1 to 118), isolates single-proton boundary exceptions (H), 
 and computes multi-nucleon core baseline statistics.
