@@ -1,6 +1,6 @@
 """
 Warped Information Number (WIN) Paradigm — Quantum Scrambling Validation Suite
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Simulates out-of-time-order correlators (OTOCs) using toy-model 
 substrates and validates the recalibrated 'Goldilocks' zone for chaos damping (gamma).
 """
