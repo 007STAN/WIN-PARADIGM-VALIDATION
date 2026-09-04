@@ -1,6 +1,6 @@
 """
 Warped Information Number (WIN) Paradigm — N=64 Majorana Lattice Simulation
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Models the closed N=64 Majorana fermion lattice substrate, sector 
 partition (V_48 + H_16), complex fermion mapping, and the Master Evolution Equation.
 """
