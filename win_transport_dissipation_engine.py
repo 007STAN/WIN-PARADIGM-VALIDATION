@@ -1,6 +1,6 @@
 """
 WIN Paradigm: Quantum Transport & Dissipation Engine
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Interactive Colab widget for computing parameter-free Planckian dissipation 
 prefactors (alpha), linear-in-T resistivity slopes, and quantum transport saturation bounds.
 """
