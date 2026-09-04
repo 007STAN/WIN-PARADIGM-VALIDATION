@@ -1,6 +1,6 @@
 """
 WIN Paradigm: Cosmic Expansion Dispersion Engine (Hubble Tension Resolution)
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Interactive Colab widget for computing parameter-free local expansion rate shifts 
 from microcanonical substrate dispersion across cosmic distance tiers.
 """
