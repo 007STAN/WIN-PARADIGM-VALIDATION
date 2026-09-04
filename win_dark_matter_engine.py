@@ -1,6 +1,6 @@
 """
 WIN Paradigm: Dark Matter Relic Density & Bound State Engine
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Interactive Colab widget for computing Majorana bound state relic 
 density (Omega_DM h^2), binding energies, and substrate protection lifetimes.
 """
