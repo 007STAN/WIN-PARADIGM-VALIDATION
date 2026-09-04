@@ -1,6 +1,6 @@
 """
 WIN Paradigm: Substrate Energy Cascade & Intermittency Engine (Navier-Stokes)
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Interactive Colab widget for computing parameter-free Kolmogorov -5/3 power spectra 
 and multifractal intermittency corrections from discrete network sector-switching rates.
 """
