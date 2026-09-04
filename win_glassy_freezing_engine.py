@@ -1,6 +1,6 @@
 """
 WIN Paradigm: Glassy Freezing & Kauzmann Entropy Engine
-Author: Stanley Preschutti (Entropia Research Institute)
+Author: Stanley Preschutti (Information Physics Institute, UK)
 Description: Interactive Colab widget for computing parameter-free glass transition heat 
 capacity jump ratios and resolving the Kauzmann entropy catastrophe via microcanonical saturation.
 """
