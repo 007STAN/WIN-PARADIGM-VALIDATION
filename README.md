@@ -29,6 +29,21 @@ The framework operates under a strict **zero continuous free parameter** archite
 *   **Absolute Rigidity (No Curve-Fitting):** Because the parameters are rigidly locked to topological and holographic derivations, the model cannot be manipulated to "force" a match with data. 
 *   **Transparent Falsifiability:** The validation suite is designed to fail cleanly and predictably when pushed outside its operational envelope. This unambiguous failure mode ensures that every verification test is a true test of physical consistency rather than mathematical illusion.
 
+### Physicist’s Brief: Classical Bridge & Falsifiability Protocol
+
+For researchers evaluating the framework from a standard Effective Field Theory (EFT) or General Relativity perspective, the WIN Paradigm is structured to avoid adjustable "fudge factors" while maintaining a rigorous recovery of classical limits.
+
+#### 1. The Classical and Standard Model Bridge
+*   **Low-Energy Limit Recovery:** In the macroscopic limit where entropic damping operator weights approach zero ($W \to 0$), the 5D warped geometry ($kL \approx 38.44$) smoothly reduces to standard Einstein-Hilbert gravity coupled to the Standard Model, ensuring no conflict with established low energy observations.
+*   **Parameter Free Mapping:** Rather than introducing new free parameters to resolve anomalies (such as the Hubble Tension or Muon $g-2$), the framework utilizes the **Master Conversion Theorem**. Transition amplitudes ($V_{ij}$) are derived entirely from topological network partitions and holographic scaling bounds, predicting fixed values that must match empirical data without post hoc tuning.
+
+#### 2. Explicit Falsifiability & Tripwire Architecture
+Unlike heuristic models that can be endlessly adjusted to fit new data, this validation suite is built with strict **falsification tripwires**:
+*   **The Holographic Boundary Window:** Monte Carlo stress-testing establishes a mandatory operational band of $kL \in [36.69, 40.40]$. If observational data or experimental cross-sections push a derivation outside this band, the engine triggers an immediate, unrecoverable geometric reconstruction failure.
+*   **Empirical Falsification Thresholds:** Built-in validation pipelines (such as `win_dark_photon_validation.py` against NA64 and `win_hubble_tension_engine.py` against SDSS DR20/Planck) enforce a strict residual threshold ($\Delta \le 1.2 \times 10^{-4}$). Discrepancies exceeding this bound invalidate the specific substrate sector.
+
+> **To Test Locally:** Run any engine within its designated directory (e.g., `python 01_Cosmology_Astrophysics/win_hubble_tension_engine.py`) to inspect real time boundary stress logs and verify how the framework handles constraint violations.
+
 ---
 
 ## 📂 Repository File Structure & Mapping
