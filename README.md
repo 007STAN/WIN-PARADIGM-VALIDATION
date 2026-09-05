@@ -43,6 +43,20 @@ Unlike heuristic models that can be endlessly adjusted to fit new data, this val
 *   **Empirical Falsification Thresholds:** Built-in validation pipelines (such as `win_dark_photon_validation.py` against NA64 and `win_hubble_tension_engine.py` against SDSS DR20/Planck) enforce a strict residual threshold ($\Delta \le 1.2 \times 10^{-4}$). Discrepancies exceeding this bound invalidate the specific substrate sector.
 
 > **To Test Locally:** Run any engine within its designated directory (e.g., `python 01_Cosmology_Astrophysics/win_hubble_tension_engine.py`) to inspect real time boundary stress logs and verify how the framework handles constraint violations.
+>
+
+# WIN Paradigm: Empirical Benchmark Verification Matrix
+
+The following matrix maps the core architectural predictions of the Warped Information Number (WIN) Paradigm against established experimental references and empirical datasets. Each identifier corresponds to an automated validation module within the repository.
+
+| Benchmark ID | Domain & Target | Input / Parameter | Paradigm Prediction | Experimental Reference | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **WIN-NUC-001** | Nuclear Masses & Binding | Atomic number $Z$ ($1$ to $118$) | Zero-parameter mass scaling & binding energy curve | AME (Atomic Mass Evaluation) data | Active |
+| **WIN-DP-001** | Dark Photon Coupling | Kinetic mixing parameter $\epsilon$ | Strict exclusion boundary bounds | NA64, BaBar, and beam-dump limits | Active |
+| **WIN-COS-001** | Cosmological Scaling | Scale-dependent entropy / Hubble parameter | Resolution of tension via $kL \approx 38.44$ | Planck 2018 / Euclid data releases | Active |
+| **WIN-QS-001** | Quantum Scrambling | Out-of-Time-Ordered Correlators (OTOCs) | Lyapunov damping and scrambling velocity | Quantum information literature / SYK benchmarks | Active |
+| **WIN-BH-001** | Black Hole Information | Microcanonical entropy & Unitary Page curve | Information retention and Page time scaling | Theoretical gravitational benchmarks | Active |
+| **WIN-TR-001** | Transport Dissipation | Planckian damping coefficients | Temperature-linear resistivity bounds | Condensed matter experimental literature | Active |
 
 ---
 
