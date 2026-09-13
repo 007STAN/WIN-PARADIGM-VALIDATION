@@ -1,213 +1,166 @@
 """
 Warped Information Number (WIN) Paradigm — Observational Cosmology Validation
 Author: Stanley Preschutti (Information Physics Institute, UK)
-Description: Cross-references large-scale structure scaling ratios and 
-background energy densities against empirical data releases from ESA Euclid 
-and Planck missions using WIN substrate-derived corrections.
+Status: CORRECTED Sept 13, 2026 — falsified correction removed.
 
-The WIN framework derives cosmological corrections from the substrate 
-structure (N = 64, H = 16, V = 48, d = 4), not from arbitrary modifications 
-to ΛCDM. The corrections are derived from the holographic entropy bound 
-and the substrate's information capacity.
+============================================================================
+TRIPWIRE NOTICE
+============================================================================
+The previous version of this widget applied a correction:
+    ε(z) = (H/N) · (1 − H₀²/H(z)²)
+    Ω_m_WIN(z) = Ω_m_LCDM(z) · (1 + ε(z))
+
+This correction is FALSIFIED. It produces Ω_m(z) > 1 at z ≳ 2, which is
+physically impossible in a flat FRW universe. The widget no longer applies
+any correction. If a future correction is proposed, it MUST satisfy:
+    Ω_m(z) ≤ 1 for all z ≥ 0
+and MUST be derived from the WIN substrate, not invented.
+
+See: WIN Research — Sept 13, 2026, Section 5.3 (dark photon falsification
+analogous: formulas that don't compute must be retracted, not rationalized).
+============================================================================
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 # ============================================================
-# WIN SUBSTRATE PARAMETERS
+# WIN SUBSTRATE PARAMETERS (from Sept 13 paper)
 # ============================================================
 
-d = 4                       # Spacetime dimension
-H = d**2                    # Hidden sector = 16
-V = (d-1) * 2**d            # Visible sector = 48
+d = 4                       # Spacetime dimension (input)
+H = 2**d                    # Hidden sector = 16  [FIXED: was d**2]
+V = (d - 1) * 2**d          # Visible sector = 48
 N = V + H                   # Total substrate = 64
-kL = 38.442487804005536     # Warp factor = ln(M_Planck/v_EW)
 
-# WIN-derived cosmological parameters
-# The substrate has N = 64 modes. The holographic bound gives the 
-# maximum entropy of the substrate. The cosmological correction is 
-# derived from the ratio of the hidden sector to the visible sector.
+# Derived kL from the Sept 13 paper:
+#   kL = N·(d−1)/(d+1) + sin²θ_W / [5.6 − d/(d+1)²]
+# with sin²θ_W = 0.23135 (framework prediction)
+sin2_theta_W = 0.23135
+kL_derived = N * (d - 1) / (d + 1) + sin2_theta_W / (5.6 - d / (d + 1)**2)
 
-# The dark energy equation of state from the substrate:
-# w = -1 + Delta_tax, where Delta_tax is the metabolic tax of the substrate
-# Delta_tax = (1 - gamma) * (lambda_L / 2)
-# with gamma = 0.542133 (7D MESA minimum) and lambda_L = 0.85 (chaos bound)
-gamma_MESA = 0.542133
-lambda_L = 0.85
-Delta_tax = (1 - gamma_MESA) * (lambda_L / 2)
+# Observed value for comparison
+kL_observed = 38.442488
 
-# The dark energy equation of state
-w_WIN = -1 + Delta_tax
+# TRIPWIRE: kL derivation must match observation to < 0.01%
+assert abs(kL_derived - kL_observed) / kL_observed < 1e-4, \
+    f"TRIPWIRE FAILED: kL derivation broken. Derived={kL_derived}, Observed={kL_observed}"
 
-# The holographic correction to the matter density:
-# The substrate has a finite information capacity. As the universe expands,
-# the information capacity of the observable universe increases. The 
-# correction to Omega_m(z) is derived from the ratio of the information 
-# capacity at redshift z to the information capacity today.
+# ============================================================
+# UNEXPLAINED CONSTANTS — FLAGGED, NOT USED
+# ============================================================
 
-def win_substrate_information_capacity(z):
+# The following constants appeared in the previous version but are NOT
+# derived in any of the four Sept 13 papers. They are retained here as
+# placeholders pending derivation. DO NOT use them in any calculation
+# until their origin is established.
+#
+# gamma_MESA = 0.542133     # "7D MESA minimum" — NO DERIVATION FOUND
+# lambda_L   = 0.85         # "chaos bound" — NO DERIVATION FOUND
+# Delta_tax  = (1 - gamma_MESA) * (lambda_L / 2)  # AD HOC — NOT DERIVED
+# w_WIN      = -1 + Delta_tax                      # AD HOC — NOT DERIVED
+
+# If you wish to use these, you MUST first derive them from d=4, N, H, V.
+# Until then, this widget does NOT make a dark-energy prediction.
+
+# ============================================================
+# ΛCDM BASELINE (Planck 2018)
+# ============================================================
+
+OMEGA_M0 = 0.315
+OMEGA_L0 = 0.685
+
+def lcdm_matter(z):
+    """Standard ΛCDM matter density parameter Ω_m(z)."""
+    H_z_sq = OMEGA_M0 * (1 + z)**3 + OMEGA_L0
+    return (OMEGA_M0 * (1 + z)**3) / H_z_sq
+
+def lcdm_dark_energy(z):
+    """Standard ΛCDM dark energy density parameter Ω_Λ(z)."""
+    H_z_sq = OMEGA_M0 * (1 + z)**3 + OMEGA_L0
+    return OMEGA_L0 / H_z_sq
+
+# ============================================================
+# WIN PREDICTION — ONLY IF DERIVED
+# ============================================================
+
+def win_matter(z):
     """
-    Compute the information capacity of the substrate at redshift z.
-    
-    The information capacity scales with the number of modes N and the 
-    holographic bound. At redshift z, the effective number of modes is:
-    N_eff(z) = N * (1 + z)^(-3/2)  (for matter-dominated era)
-    
-    The information capacity is proportional to N_eff(z).
-    """
-    # For matter-dominated era: H(z) ~ (1+z)^(3/2)
-    # The effective number of modes scales as N / (1 + z)^(3/2)
-    # Wait — this is wrong. Let me derive properly.
+    WIN-corrected matter density.
 
-    # The holographic bound says S <= A/(4G). The area A scales as 
-    # (comoving distance)^2. For a flat universe, the comoving distance 
-    # to the horizon scales as 1/H(z). So A ~ 1/H(z)^2.
-    # H(z) = H_0 * sqrt(Omega_m0 (1+z)^3 + Omega_L0)
-    # So A ~ 1 / (Omega_m0 (1+z)^3 + Omega_L0)
+    STATUS: OPEN PROBLEM. The WIN framework does NOT currently provide
+    a derivation of Ω_m(z) that differs from ΛCDM at observable redshifts.
+    The previous widget's correction is falsified (produces Ω_m > 1).
 
-    Omega_m0 = 0.315
-    Omega_L0 = 0.685
-    H_z_sq = Omega_m0 * (1 + z)**3 + Omega_L0
-    
-    # Information capacity scales as 1/H(z)^2
-    # Relative to today (z = 0):
-    H_0_sq = Omega_m0 + Omega_L0
-    capacity_ratio = H_0_sq / H_z_sq
-    
-    return capacity_ratio
+    Until a derivation is provided, WIN reduces to ΛCDM at the background level.
+    """
+    return lcdm_matter(z)
 
-def win_cosmological_matter(z):
-    """
-    WIN Paradigm corrected matter density evolution.
-    
-    The WIN correction to the matter density comes from the substrate's 
-    finite information capacity. As the universe expands, the substrate 
-    loses information capacity, which modifies the effective matter density.
-    
-    The correction is derived from the holographic entropy bound and the 
-    substrate structure (N = 64, H = 16, V = 48).
-    
-    The correction factor is:
-    Omega_m_WIN(z) = Omega_m_LCDM(z) * (1 + epsilon(z))
-    where epsilon(z) is derived from the information capacity ratio.
-    
-    The correction epsilon(z) is:
-    epsilon(z) = (H/N) * (1 - capacity_ratio(z))
-    where H/N = 16/64 = 1/4 is the hidden sector fraction.
-    """
-    Omega_m0 = 0.315
-    Omega_L0 = 0.685
-    H_z_sq = Omega_m0 * (1 + z)**3 + Omega_L0
-    Omega_m_LCDM = (Omega_m0 * (1 + z)**3) / H_z_sq
-    
-    # Information capacity ratio
-    capacity_ratio = win_substrate_information_capacity(z)
-    
-    # Hidden sector fraction
-    hidden_fraction = H / N  # = 0.25
-    
-    # WIN correction
-    epsilon = hidden_fraction * (1 - capacity_ratio)
-    
-    Omega_m_WIN = Omega_m_LCDM * (1 + epsilon)
-    
-    return Omega_m_WIN
-
-def standard_lcdm_matter(z):
-    """Standard LambdaCDM matter density parameter evolution Omega_m(z)."""
-    omega_m0 = 0.315
-    omega_l0 = 0.685
-    h_z_sq = omega_m0 * (1 + z)**3 + omega_l0
-    return (omega_m0 * (1 + z)**3) / h_z_sq
-
-def win_dark_energy(z):
-    """
-    WIN Paradigm dark energy equation of state.
-    
-    The dark energy equation of state is derived from the substrate's 
-    metabolic tax:
-    w = -1 + Delta_tax
-    where Delta_tax = (1 - gamma) * (lambda_L / 2) = 0.039
-    
-    So w = -1 + 0.039 = -0.961
-    """
-    return w_WIN * np.ones_like(z)
+# ============================================================
+# VALIDATION
+# ============================================================
 
 def run_cosmology_validation():
-    # Redshift range from z = 0 to z = 3.0 (core range for Euclid / Planck structure data)
-    redshifts = np.linspace(0, 3.0, 200)
-    
-    lcdm_vals = np.array([standard_lcdm_matter(z) for z in redshifts])
-    win_vals = np.array([win_cosmological_matter(z) for z in redshifts])
-    
+    z = np.linspace(0, 3.0, 200)
+    lcdm_vals = lcdm_matter(z)
+    win_vals = win_matter(z)
+
     print("=" * 70)
-    print("WIN PARADIGM: COSMOLOGICAL BACKGROUND AUDIT (PLANCK / EUCLID)")
+    print("WIN PARADIGM: COSMOLOGICAL BACKGROUND AUDIT")
     print("=" * 70)
     print()
-    print("Substrate parameters:")
-    print(f"  d = {d} (spacetime dimension)")
-    print(f"  H = {H} (hidden sector)")
-    print(f"  V = {V} (visible sector)")
-    print(f"  N = {N} (total substrate)")
-    print(f"  kL = {kL:.5f} (warp factor)")
+    print("Substrate parameters (from d = 4):")
+    print(f"  d = {d}")
+    print(f"  H = 2^d = {H}  [FIXED: was d**2]")
+    print(f"  V = (d-1)·2^d = {V}")
+    print(f"  N = V + H = {N}")
     print()
-    print("WIN-derived cosmological parameters:")
-    print(f"  gamma_MESA = {gamma_MESA:.6f} (7D MESA minimum)")
-    print(f"  lambda_L = {lambda_L} (chaos bound)")
-    print(f"  Delta_tax = {Delta_tax:.6f} (metabolic tax)")
-    print(f"  w_WIN = {w_WIN:.6f} (dark energy equation of state)")
-    print(f"  Hidden fraction H/N = {H/N:.6f}")
+    print("Warp factor (DERIVED, not input):")
+    print(f"  kL_derived  = {kL_derived:.6f}")
+    print(f"  kL_observed = {kL_observed:.6f}")
+    print(f"  Error       = {abs(kL_derived - kL_observed)/kL_observed * 100:.4f}%")
+    print(f"  TRIPWIRE:   PASSED")
     print()
-    
-    # Spot check key redshift milestones
-    milestones = [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+    print("STATUS: The previous WIN cosmological correction is FALSIFIED.")
+    print("  Reason: ε(z) = (H/N)·(1 − H₀²/H(z)²) produces Ω_m(z) > 1 at z ≳ 2.")
+    print("  Action: Correction removed. WIN reduces to ΛCDM at background level")
+    print("          until a derivation is provided.")
+    print()
     print("-" * 70)
-    print(f"{'Redshift (z)':<15} | {'LambdaCDM Omega_m':<20} | {'WIN Corrected':<15} | {'Ratio':<10}")
+    print(f"{'z':<8} | {'Ω_m ΛCDM':<12} | {'Ω_Λ ΛCDM':<12} | {'Ω_m WIN':<12} | {'Physical?'}")
     print("-" * 70)
-    
-    for z in milestones:
-        lcdm = standard_lcdm_matter(z)
-        win = win_cosmological_matter(z)
-        ratio = win / lcdm if lcdm != 0 else 0
-        print(f"{z:<15.1f} | {lcdm:<20.6f} | {win:<15.6f} | {ratio:<10.6f}")
+    for z_val in [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]:
+        om = lcdm_matter(z_val)
+        ol = lcdm_dark_energy(z_val)
+        ow = win_matter(z_val)
+        physical = "YES" if ow <= 1.0 else "NO — FALSIFIED"
+        print(f"{z_val:<8.1f} | {om:<12.6f} | {ol:<12.6f} | {ow:<12.6f} | {physical}")
     print("-" * 70)
     print()
-    print("NOTE: The WIN correction is derived from the substrate's finite")
-    print("information capacity (N = 64, H = 16, V = 48, d = 4).")
-    print("It is NOT an arbitrary modification to LambdaCDM.")
-    print()
-    print("The correction factor epsilon(z) = (H/N) * (1 - capacity_ratio(z))")
-    print("where H/N = 16/64 = 0.25 is the hidden sector fraction.")
+    print("NOTE: No observational data (Planck, Euclid, BAO, SNe) is loaded.")
+    print("      This widget validates the FRAMEWORK's internal consistency only.")
+    print("      A data-comparison widget requires real likelihood code.")
     print("=" * 70)
 
-    # Plotting cosmological evolution comparison
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
-    
-    # Top panel: matter density evolution
-    ax1.plot(redshifts, lcdm_vals, label=r'$\Lambda$CDM Baseline (Planck 2018)', 
-             color='black', linestyle='--', linewidth=2)
-    ax1.plot(redshifts, win_vals, label='WIN Substrate-Corrected Evolution', 
-             color='#2ca02c', linewidth=2.5)
-    ax1.set_ylabel(r'Matter Density Parameter $\Omega_m(z)$', fontsize=11)
-    ax1.set_title('Cosmological Matter Density Evolution: WIN vs. $\\Lambda$CDM', 
-                  fontsize=12, fontweight='bold')
-    ax1.grid(True, linestyle=':', alpha=0.6)
-    ax1.legend(frameon=True, facecolor='white', loc='upper right')
-    
-    # Bottom panel: ratio
-    ratio_vals = win_vals / lcdm_vals
-    ax2.plot(redshifts, ratio_vals, color='#d62728', linewidth=2)
-    ax2.axhline(y=1.0, color='black', linestyle='--', alpha=0.5)
-    ax2.set_xlabel('Redshift (z)', fontsize=11)
-    ax2.set_ylabel('WIN / $\\Lambda$CDM Ratio', fontsize=11)
-    ax2.set_title('WIN Correction Factor', fontsize=12, fontweight='bold')
-    ax2.grid(True, linestyle=':', alpha=0.6)
-    
+    # Plot
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    ax.plot(z, lcdm_vals, label=r'$\Lambda$CDM (Planck 2018)', color='black',
+            linestyle='--', linewidth=2)
+    ax.plot(z, win_vals, label='WIN (no correction — falsified correction removed)',
+            color='#2ca02c', linewidth=2.5, alpha=0.7)
+    ax.axhline(y=1.0, color='red', linestyle=':', alpha=0.5,
+               label='Physical bound Ω_m ≤ 1')
+    ax.set_xlabel('Redshift z', fontsize=11)
+    ax.set_ylabel(r'Matter Density Parameter $\Omega_m(z)$', fontsize=11)
+    ax.set_title('WIN vs. ΛCDM Matter Density — Falsified Correction Removed',
+                 fontsize=12, fontweight='bold')
+    ax.grid(True, linestyle=':', alpha=0.6)
+    ax.legend(frameon=True, facecolor='white')
+    ax.set_ylim(0, 1.05)
     plt.tight_layout()
     plt.show()
-    
-    return redshifts, lcdm_vals, win_vals
+
+    return z, lcdm_vals, win_vals
 
 if __name__ == "__main__":
-    redshifts, lcdm_vals, win_vals = run_cosmology_validation()
+    run_cosmology_validation()
