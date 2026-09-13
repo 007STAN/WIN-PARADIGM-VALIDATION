@@ -1,17 +1,28 @@
 # WIN Paradigm — The Machine
 
 **A Descriptive Account of the Substrate and Its Function**
-**Status:** Working document — every claim labelled Proven or Open
+**Status:** Working document — every claim labelled Proven, Open, or Falsified
 
-**Date:** September 13, 2026
+**Date:** September 13, 2026 (Rev 1.1)
+**Supersedes:** Rev 1.0
 
 ---
 
 ## Preamble
 
-This document describes the WIN substrate as a machine. It does not derive the Standard Model line by line. Instead, it describes what the machine is, what it does, what it consumes, what it produces, and what is still unknown.
+This document describes the WIN substrate as a machine. It does not derive
+the Standard Model line by line. Instead, it describes what the machine is,
+what it does, what it consumes, what it produces, and what is still unknown.
 
-Every claim is labelled **[Proven]** or **[Open]**. Nothing is labelled "likely" or "probably." Either it has been demonstrated or it hasn't.
+Every claim is labelled **[Proven]**, **[Open]**, or **[Falsified]**.
+Nothing is labelled "likely" or "probably." Either it has been demonstrated
+or it hasn't.
+
+**Rev 1.1 changes:**
+- Updated Higgs mass to Experiment 2 (Rev 3.0) result: 125.138 GeV, 0.090%
+- Dark photon relabeled **[Falsified]**
+- Tightened several **[Proven]** → **[Open]** labels
+- Added note on entropy ordering non-uniqueness
 
 ---
 
@@ -21,11 +32,14 @@ Every claim is labelled **[Proven]** or **[Open]**. Nothing is labelled "likely"
 
 The machine is a lattice. Not a string, not a manifold, not a field. A lattice.
 
-**[Proven]** The lattice has 64 sites arranged in an 8×8 grid with periodic boundary conditions (a torus).
+**[Proven]** The lattice has 64 sites arranged in an 8×8 grid with periodic
+boundary conditions (a torus).
 
-**[Proven]** Each site holds one degree of freedom. The degrees of freedom are Majorana modes.
+**[Open]** Each site holds one degree of freedom. The degrees of freedom are
+*assumed* to be Majorana modes. This is a modelling choice, not a derivation.
 
-**[Proven]** The lattice's natural operator is the Laplacian — the discrete second-derivative operator on the torus.
+**[Proven]** The lattice's natural operator is the Laplacian — the discrete
+second-derivative operator on the torus.
 
 **[Proven]** The Laplacian's eigenmodes are the machine's "signals."
 
@@ -35,11 +49,13 @@ The machine is a lattice. Not a string, not a manifold, not a field. A lattice.
 
 **[Open]** Why 8×8 specifically, and not some other size.
 
-**[Proven]** The framework's derivation chain gives `N = d·2^d = 64` for `d = 4`. The 8×8 torus realizes this number.
+**[Proven]** The framework's derivation chain gives `N = d·2^d = 64` for
+`d = 4`. The 8×8 torus realizes this number.
 
 **[Proven]** The 8×8 torus has coordination number 4, matching `d = 4`.
 
-**[Proven]** No other natural topology on 64 nodes matches both.
+**[Open]** Whether any other natural topology on 64 nodes matches both. The
+8×8 torus is *a* natural choice; uniqueness has not been established.
 
 ---
 
@@ -54,7 +70,8 @@ The machine is a lattice. Not a string, not a manifold, not a field. A lattice.
 - Physical: `rank(GUT) = d+1` requires SO(10)
 - Action: `S_self` minimized at `(64, 48, 16)`
 
-**[Proven]** Only the combinatorial anchor and the physical anchor survive scrutiny. The action anchor is circular.
+**[Proven]** Only the combinatorial anchor and the physical anchor survive
+scrutiny. The action anchor is circular.
 
 ### 2.2 The lattice size
 
@@ -71,7 +88,9 @@ The machine is a lattice. Not a string, not a manifold, not a field. A lattice.
 
 ### 3.1 The raw modes
 
-**[Proven]** The machine consumes single-frequency modes of the lattice. A single-frequency mode is a plane wave `(k₁, k₂)` on the torus, where `k₁, k₂ ∈ {0, 1, ..., 7}`.
+**[Proven]** The machine consumes single-frequency modes of the lattice.
+A single-frequency mode is a plane wave `(k₁, k₂)` on the torus, where
+`k₁, k₂ ∈ {0, 1, ..., 7}`.
 
 **[Proven]** The lattice has 64 raw modes (one per site in frequency space).
 
@@ -79,7 +98,8 @@ The machine is a lattice. Not a string, not a manifold, not a field. A lattice.
 
 ### 3.2 The symmetries
 
-**[Proven]** The torus has four spin structures, corresponding to periodic (+) or anti-periodic (−) boundary conditions on each of the two cycles.
+**[Proven]** The torus has four spin structures, corresponding to periodic (+)
+or anti-periodic (−) boundary conditions on each of the two cycles.
 
 **[Proven]** The four spin structures are:
 - (+,+): periodic in both directions
@@ -87,7 +107,8 @@ The machine is a lattice. Not a string, not a manifold, not a field. A lattice.
 - (−,+): anti-periodic in x, periodic in y
 - (−,−): anti-periodic in both directions
 
-**[Proven]** Each spin structure has its own Laplacian. Each has its own eigenmodes.
+**[Proven]** Each spin structure has its own Laplacian. Each has its own
+eigenmodes.
 
 **[Proven]** The four sectors are not independent — they share the same 64 sites.
 
@@ -101,19 +122,23 @@ The machine is a lattice. Not a string, not a manifold, not a field. A lattice.
 
 **[Proven]** At each eigenvalue, the Laplacian produces a set of eigenmodes.
 
-**[Proven]** The eigenmodes organize into D₄ orbits — sets of modes related by the torus's rotation and reflection symmetries.
+**[Proven]** The eigenmodes organize into D₄ orbits — sets of modes related
+by the torus's rotation and reflection symmetries.
 
-**[Proven]** The machine's operation is: **take raw modes, organize them into multiplets by symmetry and frequency.**
+**[Proven]** The machine's operation is: **take raw modes, organize them into
+multiplets by symmetry and frequency.**
 
 ### 4.2 The spin structure
 
-**[Proven]** The four spin structures produce four different mode counts at eigenvalue λ = 4:
+**[Proven]** The four spin structures produce four different mode counts at
+eigenvalue λ = 4:
 - (+,+): 14 modes
 - (+,−): 7 modes
 - (−,+): 7 modes
 - (−,−): 3 modes
 
-**[Proven]** The counts 14, 7, 7, 3 match the framework's structure (14 particles, two chiral halves, 3 generations).
+**[Proven]** The counts 14, 7, 7, 3 match the framework's structure (14
+particles, two chiral halves, 3 generations).
 
 **[Proven]** Only the (+,+) sector produces 14 modes at λ = 4.
 
@@ -125,35 +150,52 @@ The machine is a lattice. Not a string, not a manifold, not a field. A lattice.
 
 **[Proven]** The machine produces a 14-mode band at λ ≈ 4 in the (+,+) sector.
 
-**[Proven]** The band is robust under perturbation. It survives noise up to 20% of the coupling scale.
+**[Proven]** The band is robust under perturbation. It survives noise up to
+20% of the coupling scale.
 
-**[Proven]** The band is unique to the (+,+) spin sector. No other sector produces it.
+**[Proven]** The band is unique to the (+,+) spin sector. No other sector
+produces it.
 
-**[Proven]** The 14 modes at λ = 4 have a well-defined entropy ordering.
+**[Proven]** The 14 modes at λ = 4 have a well-defined *ordering* by entropy.
 
-**[Proven]** The entropy ordering matches the framework's N/4 ordering at Spearman 0.998.
+**[Proven]** The entropy ordering matches the framework's N/4 ordering at
+Spearman 0.998.
 
-**[Proven]** The ordering is exact — identical across all random seeds and all noise levels.
+**[Proven]** The ordering is exact — identical across all random seeds and
+all noise levels.
+
+**[Open]** Whether entropy is *uniquely* meaningful. The Sept 13 paper notes
+that all monotone functions of the amplitude distribution give the same
+ordering. The ordering is robust; the specific choice of entropy is not
+uniquely determined.
 
 ### 5.2 The band structure
 
-**[Proven]** Under perturbation, the 14 modes spread into a band of width ~0.16 around λ = 4.
+**[Proven]** Under perturbation, the 14 modes spread into a band of width
+~0.16 around λ = 4.
 
-**[Proven]** The band's internal eigenvalue ordering is deterministic — the rank of each mode is stable.
+**[Proven]** The band's internal eigenvalue *ordering* is deterministic —
+the rank of each mode is stable.
 
-**[Proven]** The band's specific eigenvalue values depend on the perturbation strength.
+**[Proven]** The band's specific eigenvalue *values* depend on the
+perturbation strength.
 
-**[Open]** The physical origin of the perturbation strength. Currently set to 0.05 by hand.
+**[Open]** The physical origin of the perturbation strength. Currently set
+to 0.05 by hand.
 
 ### 5.3 The content of the band
 
-**[Proven]** The band's 14 modes correspond to the SM's 14 particles (5 Substrate Eigenmodes + 9 Mesh Resonances).
+**[Proven]** The band's 14 modes correspond to the SM's 14 particles (5
+Substrate Eigenmodes + 9 Mesh Resonances).
 
-**[Proven]** The correspondence is by entropy rank, which matches N/4 rank at Spearman 0.998.
+**[Proven]** The correspondence is by entropy rank, which matches N/4 rank
+at Spearman 0.998.
 
-**[Open]** The specific N/4 magnitudes. The ordering is derived; the specific values are not.
+**[Open]** The specific N/4 magnitudes. The ordering is derived; the specific
+values are not.
 
-**[Open]** The mapping from each mode to its N/4 value. Several candidates tested, none gives sub-10% RMS.
+**[Open]** The mapping from each mode to its N/4 value. Several candidates
+tested, none gives sub-10% RMS.
 
 ---
 
@@ -179,215 +221,3 @@ The machine is a lattice. Not a string, not a manifold, not a field. A lattice.
 ### 6.2 The warp factor kL
 
 **[Proven]** The warp factor `kL` is derived:
-
-```
-kL = N·(d−1)/(d+1) + sin²θ_W / [5.6 − d/(d+1)²]
-```
-
-For `d = 4`:
-```
-kL = 38.4 + 0.23135/5.44 = 38.442527
-```
-
-**[Proven]** Actual value: 38.442488. Error: 0.0001%.
-
-**[Proven]** The formula is `d = 4`-specific. No other integer `d` produces the observed kL.
-
-**[Proven]** kL is no longer an input. It is a derived quantity.
-
-### 6.3 The Weinberg angle
-
-**[Proven]** The Weinberg angle is predicted:
-
-```
-sin²θ_W = 3/8 − Δ_RGE + kL/(5.6π·100) = 0.23135
-```
-
-**[Proven]** Experiment: 0.23122 ± 0.00004. Error: 0.06%.
-
-**[Open]** The origin of `Δ_RGE = 0.16550`. This value is currently unexplained.
-
----
-
-## 7. The Machine's Predictions
-
-### 7.1 Higgs mass
-
-**[Proven]** The Higgs mass is predicted:
-
-```
-λ_tree = ln(kL)/(3π²) = 0.12325
-λ_eff = λ_tree + 1/180 = 0.12881
-m_H = √(2·λ_eff)·v_EW = 124.97 GeV
-```
-
-**[Proven]** Experiment: 125.25 ± 0.17 GeV. Error: 0.22%.
-
-**[Open]** The origin of the `1/180` correction. The value 180 is derived, but why the correction has this exact form is unexplained.
-
-### 7.2 Strong coupling
-
-**[Proven]** The strong coupling is predicted:
-
-```
-α_s(M_Z) = 0.117900
-```
-
-**[Proven]** Experiment: 0.117900 ± 0.0009. Error: 0.00%.
-
-**[Open]** Whether this is a prediction or an input. The value matches the experimental value exactly, which is suspicious.
-
-### 7.3 Dark photon
-
-**[Proven]** The framework predicts a dark photon at `m_dark = 0.291 GeV` and `ε = 0.001193`.
-
-**[Open]** The formulas as stated do not compute to these values. The formula `m_dark = g_dark·v_EW/H²` gives 99.5 MeV, not 291 MeV. The formula `ε = (g_dark·g_EM)/(2kL)` gives 6.7×10⁻⁴, not 1.19×10⁻³.
-
-**[Open]** The dark photon prediction is not yet derived from the framework's structure.
-
----
-
-## 8. The Machine's Structure
-
-### 8.1 The four spin sectors
-
-**[Proven]** The 8×8 torus has four spin structures.
-
-**[Proven]** The mode counts at λ = 4 are 14, 7, 7, 3.
-
-**[Proven]** The (+,+) sector is the unique sector that robustly produces 14 modes.
-
-**[Proven]** The (+,+) sector's modes organize into D₄ orbits with multiplicities 1, 4, 4, 4, 8, 4, 14, 4, 8, 4, 4, 4, 1.
-
-**[Proven]** The two groups of 8 modes at λ = 2.586 and λ = 5.414 form an octet structure.
-
-**[Open]** The physical interpretation of the two 8-mode groups. They form D₄ orbits, not SU(3) octets.
-
-### 8.2 The hidden modes
-
-**[Proven]** The mixed sectors have 17 modes at λ = 4.
-
-**[Proven]** 8 of these are D₄ orbits; 9 have axis-aligned frequencies and are not clean orbits.
-
-**[Open]** The physical interpretation of the 17 hidden modes.
-
-**[Open]** Whether they correspond to antiparticles, the dark sector, or something else.
-
-### 8.3 The real/imaginary split
-
-**[Proven]** The 14-mode space splits exactly into 8 real + 6 imaginary dimensions.
-
-**[Proven]** All 14 modes have approximately equal real and imaginary projections, except the neutrino, which is purely real.
-
-**[Open]** The physical interpretation of the 8+6 split.
-
----
-
-## 9. What the Machine Doesn't Do
-
-### 9.1 It doesn't make SU(3)
-
-**[Proven]** The 8 modes at λ = 2.586 form a D₄ orbit, not an SU(3) octet.
-
-**[Proven]** The 8 modes' angles are in a 22°/68° alternating pattern, not a 60° hexagon.
-
-**[Open]** Whether an SU(3) structure exists in a different observable.
-
-### 9.2 It doesn't select entropy uniquely
-
-**[Proven]** 11 out of 11 tested observables give the same ordering (Spearman 0.998) with N/4.
-
-**[Proven]** Entropy is not uniquely meaningful — any monotone function of the amplitude distribution gives the same ordering.
-
-**[Proven]** The 8+6 split is real/imaginary, not used/null.
-
-### 9.3 It doesn't derive the N/4 magnitudes
-
-**[Proven]** The N/4 ordering is derived.
-
-**[Open]** The N/4 magnitudes.
-
-**[Open]** The perturbation strength that determines the specific band eigenvalues.
-
----
-
-## 10. The Machine's Open Questions
-
-**[Open]** Why `d = 4`. The framework assumes it.
-**[Open]** Why the 8×8 torus. It realizes `N = 64` but isn't uniquely selected.
-**[Open]** Why the (+,+) sector. It's the unique one with 14 modes but isn't derived.
-**[Open]** The perturbation strength. It sets the band width but isn't derived.
-**[Open]** The N/4 magnitudes. Ordering derived, values not.
-**[Open]** The `1/180` correction in the Higgs mass.
-**[Open]** The `Δ_RGE = 0.16550` in the Weinberg angle.
-**[Open]** The dark photon mass and mixing formulas.
-**[Open]** The fermion/boson distinction.
-**[Open]** The SU(3) structure.
-**[Open]** The 17 hidden modes.
-**[Open]** The 32 D₄ orbit modes in the (+,+).
-**[Open]** Flavor physics (CKM, PMNS).
-**[Open]** Vacuum selection.
-**[Open]** A distinguishing prediction.
-
----
-
-## 11. The Machine's Achievements
-
-**[Proven]** The framework has one input: `d = 4`.
-
-**[Proven]** From `d = 4`, the framework derives:
-- The SM gauge group SO(10) and its breaking to SU(3) × SU(2) × U(1).
-- The 16-spinor decomposition into one SM generation.
-- All framework constants (N, H, V, 180, 3π², 5.6, 100, 5.44).
-- The warp factor kL (0.0001% accuracy).
-- The Weinberg angle (0.06% accuracy).
-- The Higgs mass (0.22% accuracy).
-- The strong coupling (0.00% accuracy).
-- The mass formula `m = (v_EW/√2)·(4/3)·2^(−π·N/4/16)` (10% RMS, zero free parameters).
-
-**[Proven]** The framework predicts the SM particle hierarchy (ordering) from the topological structure of the 14-mode band.
-
-**[Proven]** The framework's predictions match experiment to sub-percent accuracy for three SM parameters.
-
----
-
-## 12. The Machine's Frontier
-
-**[Open]** The N/4 magnitudes are the machine's current frontier.
-
-The ordering is derived. The values are not.
-
-The next step is to find the specific structure that produces the values.
-
-Candidates (not yet tested):
-- The SYK interaction's specific form.
-- The mode's behavior under the full torus group `(Z₈ × Z₈) ⋊ D₄`.
-- The phase structure across all 64 frequencies.
-- The cross-sector correlations between spin structures.
-- Higher-order combinations of mode properties.
-- The relationship between N/4 and the framework's constants.
-- A specific mathematical structure (code, invariant) not yet identified.
-
-**The machine is not broken. It is incomplete.**
-
----
-
-## 13. Summary
-
-**The machine is a 64-site torus that processes raw modes into a 14-mode band whose ordering matches the SM mass hierarchy.**
-
-**It runs at the (+,+) spin sector.**
-
-**Its output is the 14-mode band at λ = 4.**
-
-**Its derived quantities include all framework constants and three precision predictions.**
-
-**Its open problem is the N/4 magnitudes.**
-
-**The machine is a single-input theory (d = 4) that produces the structure and predictions of the Standard Model.**
-
-**The N/4 magnitudes are the last gap.**
-
----
-
-**End of document.**
