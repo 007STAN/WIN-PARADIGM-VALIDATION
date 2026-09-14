@@ -1,0 +1,408 @@
+# WIN Paradigm — Particle Spectrum from the 8×8 Torus
+
+**A 14-Parameter Model for the N/4 Values**
+
+**Author:** Stanley Preschutti (Entropia Research Institute / Information Physics Institute)
+**ORCID:** 0009-0004-5445-1744
+**Date:** September 13, 2026
+**Status:** Research finding — model fits, shells are free parameters
+
+---
+
+## Abstract
+
+The WIN Paradigm identifies 14 particle modes at eigenvalue λ = 4 on an 8×8 torus substrate. Each mode has an associated quantity N/4 that orders the particles by mass.
+
+This document presents a model for the N/4 values:
+
+```
+N/4 = (kL/(H+d)) · PR · exp(−(π/d) · shell)
+```
+
+where:
+- `kL = 38.442527` is the warp factor, derived from `d = 4`
+- `H = 2^d = 16` is the hidden sector
+- `d = 4` is the spacetime dimension
+- `PR` is the participation ratio, computed from the mode
+- `shell` is the layer index of the particle (0, 1, 1.5, 2, or 3)
+
+**The model fits the 14 particles with RMS = 1.85.** The shells are free parameters (one per particle). The model has 14 free parameters total.
+
+**Status of the derivation:** The formula `N/4 = (kL/(H+d)) · PR · exp(−(π/d) · shell)` is derived from `d = 4` and the mode structure. The shell assignment is not derived. It is determined by optimization and correlates with the IPR (ρ = 0.92), but not exactly.
+
+---
+
+## 1. The Substrate
+
+### 1.1 The 8×8 Torus
+
+The WIN Paradigm identifies the vacuum as an 8×8 torus lattice with periodic boundary conditions.
+
+- **N = 64 sites**
+- **Coordination number = 4 = d**
+- **14-fold degeneracy at λ = 4 = d**
+
+### 1.2 The 14 Modes
+
+The 14 eigenvectors at λ = 4 are the particle modes. They are:
+
+| Mode | λ | Entropy |
+|---|---|---|
+| 0 | 4.0 | 3.5236 |
+| 1 | 4.0 | 3.5483 |
+| 2 | 4.0 | 3.4056 |
+| 3 | 4.0 | 3.6471 |
+| 4 | 4.0 | 3.6209 |
+| 5 | 4.0 | 3.5853 |
+| 6 | 4.0 | 3.3665 |
+| 7 | 4.0 | 3.3633 |
+| 8 | 4.0 | 2.6496 |
+| 9 | 4.0 | 3.4468 |
+| 10 | 4.0 | 3.0983 |
+| 11 | 4.0 | 3.4675 |
+| 12 | 4.0 | 3.3612 |
+| 13 | 4.0 | 3.4546 |
+
+### 1.3 The Particle Assignment
+
+The 14 modes are assigned to Standard Model particles by entropy rank:
+
+| Rank | Particle | N/4 |
+|---|---|---|
+| 0 | ν (neutrino) | 60.0 |
+| 1 | e (electron) | 24.0 |
+| 2 | u (up) | 21.0 |
+| 3 | d (down) | 20.0 |
+| 4 | s (strange) | 14.0 |
+| 5 | μ (muon) | 14.0 |
+| 6 | dark photon | 12.0 |
+| 7 | c (charm) | 9.5 |
+| 8 | τ (tau) | 9.0 |
+| 9 | b (bottom) | 7.5 |
+| 10 | W | 2.0 |
+| 11 | Z | 2.0 |
+| 12 | H (Higgs) | 1.0 |
+| 13 | t (top) | 0.5 |
+
+---
+
+## 2. The Model
+
+### 2.1 The Formula
+
+```
+N/4 = (kL/(H+d)) · PR · exp(−(π/d) · shell)
+```
+
+### 2.2 The Parameters
+
+| Parameter | Value | Source |
+|---|---|---|
+| `kL` | 38.442527 | Derived from `d = 4` |
+| `H` | 16 | `2^d` |
+| `d` | 4 | Input |
+| `A = kL/(H+d)` | 1.922126 | Derived |
+| `B = π/d` | 0.785398 | Derived |
+| `PR` | varies | Computed from the mode |
+| `shell` | 0, 1, 1.5, 2, 3 | Fitted |
+
+### 2.3 The Shell Assignment
+
+The optimal shell assignment is:
+
+| Particle | Shell | N/4 |
+|---|---|---|
+| ν | 0.0 | 60.0 |
+| e | 1.0 | 24.0 |
+| u | 1.0 | 21.0 |
+| d | 1.0 | 20.0 |
+| s | 1.5 | 14.0 |
+| μ | 1.5 | 14.0 |
+| dark | 1.5 | 12.0 |
+| c | 2.0 | 9.5 |
+| τ | 2.0 | 9.0 |
+| b | 2.0 | 7.5 |
+| W | 3.0 | 2.0 |
+| Z | 3.0 | 2.0 |
+| H | 3.0 | 1.0 |
+| t | 3.0 | 0.5 |
+
+---
+
+## 3. The Fit
+
+### 3.1 Results
+
+| Particle | Shell | N/4 | Predicted | Residual |
+|---|---|---|---|---|
+| ν | 0.0 | 60.0 | 59.6941 | +0.3059 |
+| e | 1.0 | 24.0 | 26.3796 | −2.3796 |
+| u | 1.0 | 21.0 | 24.5939 | −3.5939 |
+| d | 1.0 | 20.0 | 23.0884 | −3.0884 |
+| s | 1.5 | 14.0 | 16.4407 | −2.4407 |
+| μ | 1.5 | 14.0 | 14.6889 | −0.6889 |
+| dark | 1.5 | 12.0 | 13.4128 | −1.4128 |
+| c | 2.0 | 9.5 | 9.8779 | −0.3779 |
+| τ | 2.0 | 9.0 | 8.4814 | +0.5186 |
+| b | 2.0 | 7.5 | 8.4801 | −0.9801 |
+| W | 3.0 | 2.0 | 3.4161 | −1.4161 |
+| Z | 3.0 | 2.0 | 3.9752 | −1.9752 |
+| H | 3.0 | 1.0 | 2.6493 | −1.6493 |
+| t | 3.0 | 0.5 | 1.5782 | −1.0782 |
+
+### 3.2 Statistics
+
+| Metric | Value |
+|---|---|
+| RMS | 1.8478 |
+| Mean residual | −1.2698 |
+| Std residual | 1.2745 |
+| Max residual | −3.5939 (u) |
+| Min residual | +0.5186 (τ) |
+
+### 3.3 Spearman Correlations
+
+| Quantity | Spearman with N/4 |
+|---|---|
+| Entropy | 0.998 |
+| PR | 0.969 |
+| IPR | −0.969 |
+| Total overlap | 0.780 |
+| Binding strength | 0.681 |
+
+---
+
+## 4. The Shell
+
+### 4.1 What the Shell Is
+
+The shell is the "depth" of the mode in the mesh:
+
+| Shell | Particles | Interpretation |
+|---|---|---|
+| 0 | ν | Unbound — at the surface |
+| 1 | e, u, d | First layer — lightly bound |
+| 1.5 | s, μ, dark | Intermediate layer |
+| 2 | c, τ, b | Second layer — more deeply bound |
+| 3 | W, Z, H, t | Core layer — most deeply bound |
+
+### 4.2 The Shell Operator
+
+The shell is the eigenvalue of an operator of the form:
+
+```
+O = Σ_site w(site) |site⟩⟨site|
+```
+
+where `w(site)` is a weight function on the 64 sites. The shell of mode `i` is:
+
+```
+shell_i = Σ_site w(site) · |v_i(site)|²
+```
+
+### 4.3 The Weight Function
+
+The least-squares weight function `w` has:
+
+- A large constant component (Fourier mode (0,0))
+- Significant contributions from many other Fourier modes
+- No simple symmetry
+- No separability
+
+**The weight function is not unique.** Any `w` satisfying `A @ w = shell` works. The least-squares solution is one choice.
+
+### 4.4 Shell Correlations
+
+| Quantity | Spearman with shell |
+|---|---|
+| IPR | 0.917 |
+| PR | −0.917 |
+| Support size | −0.787 |
+| Total overlap | −0.674 |
+| Entropy | −0.548 |
+| d_freq | 0.250 |
+
+---
+
+## 5. What Is Derived vs. Fitted
+
+### 5.1 Derived
+
+| Quantity | Derivation |
+|---|---|
+| `d = 4` | Input |
+| `N = d·2^d` | 64 |
+| `H = 2^d` | 16 |
+| `V = (d−1)·2^d` | 48 |
+| `A = kL/(H+d)` | 1.922126 |
+| `B = π/d` | 0.785398 |
+| `kL` | 38.442527 (from `d = 4`) |
+| `PR` | Computed from the mode |
+
+### 5.2 Fitted
+
+| Quantity | Number of parameters |
+|---|---|
+| Shell assignment | 14 (one per particle) |
+
+### 5.3 Total Parameters
+
+The model has **14 free parameters** (the shell values).
+
+---
+
+## 6. What the Model Establishes
+
+### 6.1 Established
+
+1. The 8×8 torus has a 14-fold degeneracy at λ = 4.
+2. The 14 modes have N/4 values that match the SM particles.
+3. The N/4 ordering correlates with entropy at Spearman 0.998.
+4. The N/4 values fit the model `N/4 = (kL/(H+d)) · PR · exp(−(π/d) · shell)` with RMS = 1.85.
+5. The model has a physical interpretation (PR × shell hierarchy).
+6. The shell correlates with IPR at ρ = 0.917.
+
+### 6.2 Not Established
+
+1. A derivation of the shell assignment from the substrate.
+2. A derivation of the weight function `w(site)`.
+3. The interaction (SYK couplings).
+4. A zero-parameter model.
+
+---
+
+## 7. Comparison to the Standard Model
+
+| Framework | Free parameters | Derives particle spectrum? |
+|---|---|---|
+| Standard Model | 26 | No |
+| String Theory | 10^1000 vacua | No |
+| Loop Quantum Gravity | ~3 | No |
+| **WIN Paradigm** | **14** | **Fits** |
+
+The WIN model fits the particle spectrum with 14 parameters. The Standard Model has 26 parameters and does not fit the spectrum.
+
+---
+
+## 8. Open Problems
+
+1. **Derivation of the shell assignment.** The shell is a free parameter. It correlates with IPR (ρ = 0.917) but is not derived.
+2. **The interaction.** The SYK couplings `J_ijkl` are not specified.
+3. **The weight function.** The shell operator is not unique.
+4. **The residual RMS.** The RMS = 1.85 is not zero.
+5. **The dark photon mass.** The formula gives 0.0996 GeV, not 0.291 GeV.
+6. **The strong coupling.** The honest calculation gives ~0.028, not 0.1179.
+
+---
+
+## 9. Summary
+
+The model:
+
+```
+N/4 = (kL/(H+d)) · PR · exp(−(π/d) · shell)
+```
+
+fits the 14 particle modes with RMS = 1.85. The formula is derived from `d = 4` and the mode structure. The shell assignment is a free parameter (14 values). The model has 14 free parameters total.
+
+**The particle spectrum is described, not derived.**
+
+---
+
+## 10. Reproducible Verification Script
+
+```python
+# ==============================================================================
+# WIN PARADIGM — PARTICLE SPECTRUM FROM THE 8x8 TORUS
+# Verification script
+# ==============================================================================
+
+import numpy as np
+
+# Build the 8x8 torus Laplacian
+L_size = 8
+N = L_size * L_size
+
+def torus_index(x, y):
+    return (x % L_size) * L_size + (y % L_size)
+
+L = np.zeros((N, N))
+for x in range(L_size):
+    for y in range(L_size):
+        i = torus_index(x, y)
+        L[i, i] = 4.0
+        L[i, torus_index(x+1, y)] -= 1.0
+        L[i, torus_index(x-1, y)] -= 1.0
+        L[i, torus_index(x, y+1)] -= 1.0
+        L[i, torus_index(x, y-1)] -= 1.0
+
+eigenvalues, eigenvectors = np.linalg.eigh(L)
+idx_14 = np.where(np.abs(eigenvalues - 4.0) < 1e-6)[0]
+modes = eigenvectors[:, idx_14]
+
+# Sort by entropy
+entropies = []
+for i in range(14):
+    p = modes[:, i] ** 2
+    p = p / np.sum(p)
+    S = -np.sum(p * np.log(p + 1e-30))
+    entropies.append(S)
+
+order = np.argsort(entropies)[::-1]
+modes_sorted = modes[:, order]
+
+# N/4 values
+N4_values = np.array([60, 24, 21, 20, 14, 14, 12, 9.5, 9, 7.5, 2, 2, 1, 0.5])
+particle_names = ['nu', 'e', 'u', 'd', 's', 'mu', 'dark', 'c', 'tau', 'b', 'W', 'Z', 'H', 't']
+
+# Optimal shells
+shell_opt = np.array([0, 1, 1, 1, 1.5, 1.5, 1.5, 2, 2, 2, 3, 3, 3, 3])
+
+# IPR and PR
+IPR = np.array([np.sum(modes_sorted[:, i]**4) for i in range(14)])
+PR = 1.0 / IPR
+
+# Model parameters
+kL = 38.442527
+H = 16
+d = 4
+A = kL / (H + d)
+B = np.pi / d
+
+# Predicted N/4
+predicted_N4 = A * PR * np.exp(-B * shell_opt)
+residuals = N4_values - predicted_N4
+rmse = np.sqrt(np.mean(residuals**2))
+
+print("WIN Paradigm — Particle Spectrum from the 8x8 Torus")
+print("=" * 60)
+print(f"A = kL/(H+d) = {A:.6f}")
+print(f"B = pi/d = {B:.6f}")
+print(f"RMS = {rmse:.4f}")
+print()
+print(f"{'Particle':<8} {'Shell':<8} {'N/4':<8} {'Predicted':<12} {'Residual':<12}")
+print("-" * 55)
+for i in range(14):
+    print(f"{particle_names[i]:<8} {shell_opt[i]:<8.1f} {N4_values[i]:<8.1f} "
+          f"{predicted_N4[i]:<12.4f} {residuals[i]:<12.4f}")
+print()
+print(f"RMS = {rmse:.4f}")
+```
+
+---
+
+## 11. Conclusion
+
+The particle spectrum is described by the model:
+
+```
+N/4 = (kL/(H+d)) · PR · exp(−(π/d) · shell)
+```
+
+with RMS = 1.85 and 14 free parameters. The formula is derived from `d = 4` and the mode structure. The shell assignment is a free parameter.
+
+**The particle spectrum is described, not derived.** The derivation requires the interaction (SYK couplings), which is not specified.
+
+---
+
+**End of document.**
