@@ -2,9 +2,10 @@
 
 **A Dimensional-Reduction Framework Deriving the Standard Model Gauge Structure from the Spacetime Dimension**
 
-**Author:** Stanley Preschutti (Entropia Research Institute / Information Physics Institute)
-**ORCID:** 0009-0004-5445-1744
+**Author:** Stanley Preschutti (Information Physics Institute)
+**ORCID:** [0009-0004-5445-1744](https://orcid.org/0009-0004-5445-1744)
 **Status:** Preprint — Under Independent Verification
+**Date:** September 13, 2026
 
 ---
 
@@ -14,12 +15,12 @@ The Warped Information Number (WIN) Paradigm derives the Standard Model's gauge 
 
 From `d = 4`, the framework derives:
 
-- The GUT group SO(10) (rank = p(4) = 5)
-- The Weyl spinor dimension 2^d = 16 (one generation)
-- The hidden sector H = 2^d = 16
-- The three generations from d − 1 = 3
-- The visible sector V = (d−1) × 2^d = 48
-- The total substrate N = V + H = d × 2^d = d³ = 64
+- The GUT group `SO(10)` (rank = `p(4) = 5`)
+- The Weyl spinor dimension `2^d = 16` (one generation)
+- The hidden sector `H = 2^d = 16`
+- The three generations from `d − 1 = 3`
+- The visible sector `V = (d−1) × 2^d = 48`
+- The total substrate `N = V + H = d × 2^d = d³ = 64`
 
 The framework identifies the substrate as an **8×8 torus lattice** with four spin structures, whose mode counts at eigenvalue λ = 4 are **14, 7, 7, 3** — matching the Standard Model's 14 particles, two chiral halves, and three generations.
 
@@ -36,6 +37,24 @@ A second, independent derivation of `kL` is obtained from the pairing matrix's e
 The framework predicts the Higgs mass (0.22%), the Weinberg angle (0.06%), and the strong coupling (0.00%) to sub-percent accuracy.
 
 The framework has one input (`d = 4`). The specific magnitudes of the N/4 values remain open.
+
+---
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/007STAN/WIN-PARADIGM-VALIDATION.git
+cd WIN-PARADIGM-VALIDATION
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the verification suite
+python 08_Core_Framework_Utilities/win_kL_derivation.py
+python 08_Core_Framework_Utilities/win_torus_spectrum.py
+python 08_Core_Framework_Utilities/win_entropy_ordering.py
+```
 
 ---
 
@@ -65,7 +84,7 @@ Constants and predictions
 
 ---
 
-## 2. The Input: d = 4
+## 2. The Input: `d = 4`
 
 The framework's single input is `d = 4`. Two anchors support this selection:
 
@@ -80,7 +99,7 @@ The framework's single input is `d = 4`. Two anchors support this selection:
 
 `p(4) = 5 = rank(SO(10))`.
 
-**Anchor 2 (Physical):** The Standard Model gauge group has rank 4. To include the right-handed neutrino, the GUT group must have rank ≥ 5. The smallest simple group with rank 5 and a 16-dimensional spinor is SO(10).
+**Anchor 2 (Physical):** The Standard Model gauge group has rank 4. To include the right-handed neutrino, the GUT group must have rank ≥ 5. The smallest simple group with rank 5 and a 16-dimensional spinor is `SO(10)`.
 
 ---
 
@@ -108,7 +127,7 @@ The torus Laplacian has 64 eigenvalues with multiplicities:
 λ = 8.000 (×1)
 ```
 
-The 14-fold degeneracy at λ = 4 matches the framework's particle count.
+The **14-fold degeneracy at λ = 4** matches the framework's particle count.
 
 ### 3.2 The Four Spin Structures
 
@@ -121,7 +140,7 @@ The torus has four spin structures, corresponding to periodic (+) or anti-period
 | (−,+) | 7 |
 | (−,−) | 3 |
 
-The counts match the framework's 14 particles, two chiral halves, and three generations.
+The counts match the framework's **14 particles**, **two chiral halves**, and **three generations**.
 
 Only the (+,+) sector produces 14 modes.
 
@@ -178,15 +197,15 @@ All constants derive from `d = 4`:
 
 | Constant | Formula | Value |
 |---|---|---|
-| N | d·2^d | 64 |
-| H | 2^d | 16 |
-| V | (d−1)·2^d | 48 |
-| 180 | V·d − H + d | 180 |
-| 3π² | (d−1)·π² | 29.6088 |
-| 5.6 | (N−2d)/(2(d+1)) | 5.6 |
-| 100 | (H−2(d−1))² | 100 |
-| 5.44 | 5.6 − d/(d+1)² | 5.44 |
-| **kL** | **N·(d−1)/(d+1) + sin²θ_W/5.44** | **38.442527** |
+| `N` | `d·2^d` | 64 |
+| `H` | `2^d` | 16 |
+| `V` | `(d−1)·2^d` | 48 |
+| `180` | `V·d − H + d` | 180 |
+| `3π²` | `(d−1)·π²` | 29.6088 |
+| `5.6` | `(N−2d)/(2(d+1))` | 5.6 |
+| `100` | `(H−2(d−1))²` | 100 |
+| `5.44` | `5.6 − d/(d+1)²` | 5.44 |
+| **`kL`** | **`N·(d−1)/(d+1) + sin²θ_W/5.44`** | **38.442527** |
 
 ---
 
@@ -204,13 +223,13 @@ For `d = 4`:
 kL = 64·3/5 + 0.23135/5.44 = 38.4 + 0.042527 = 38.442527
 ```
 
-Observed: `38.442488`. Error: **1.0 × 10⁻⁶ (0.0001%)**.
+Observed: `38.442488`. Error: `1.0 × 10⁻⁶` (**0.0001%**).
 
 Only `d = 4` produces this value. The formula is `d = 4`-specific.
 
 ### 6.2 From the Pairing Matrix
 
-The pairing matrix `P_ij` has eigenvalues spanning 0.005828 to 0.218750. The ratio is 37.5372.
+The pairing matrix `P_ij` has eigenvalues spanning 0.005828 to 0.218750. The ratio is **37.5372**.
 
 The relation:
 
@@ -254,7 +273,7 @@ Experiment: `0.117900 ± 0.0009`. Error: **0.00%**.
 
 ### 7.4 Dark Photon (Proposed Prediction)
 
-The dark photon is a Substrate Eigenmode with `N/4 = H − d = 12`. The proposed prediction is `m_dark = 0.291 GeV, ε = 0.001193`.
+The dark photon is a Substrate Eigenmode with `N/4 = H − d = 12`. The proposed prediction is `m_dark = 0.291 GeV`, `ε = 0.001193`.
 
 **Status:** The stated formulas do not compute to these values. The prediction is currently unverified and requires further work.
 
@@ -286,7 +305,7 @@ The following claims have been tested and falsified:
 
 5. **The dark photon prediction.** The mass and mixing formulas require correction.
 
-6. **First-principles derivation of d = 4.** Only the combinatorial and physical anchors survive.
+6. **First-principles derivation of `d = 4`.** Only the combinatorial and physical anchors survive.
 
 7. **Flavor physics.** CKM and PMNS matrices are not derived.
 
@@ -295,7 +314,7 @@ The following claims have been tested and falsified:
 ## 10. Comparison to Other Frameworks
 
 | Framework | Inputs | Derives SM? | Predictions | Falsifiable |
-|-----------|--------|-------------|-------------|-------------|
+|---|---|---|---|---|
 | Standard Model | 26 | No | Yes | Yes |
 | String Theory | 10¹⁰⁰⁰ vacua | No | No | No |
 | Loop Quantum Gravity | ~3 | No | No | Partially |
@@ -303,26 +322,60 @@ The following claims have been tested and falsified:
 
 ---
 
-## 11. Reproducibility
+## 11. Repository Structure
 
-All calculations are reproducible using Python 3.8+ with standard scientific libraries. The algebraic verifications use exact rational arithmetic.
+```
+WIN-PARADIGM-VALIDATION/
+├── 01_Cosmology_Astrophysics/
+├── 02_Quantum_Gravity_Black_Holes/
+├── 03_Particle_Physics/
+├── 04_Condensed_Matter_Physics/
+├── 05_Biophysics_Complex_Systems/
+├── 06_Quantum_Information_Scrambling/
+├── 07_Fluid_Dynamics_Turbulence/
+├── 08_Core_Framework_Utilities/
+│   ├── win_partitions_test.py
+│   ├── win_sm_algebraic_embedding.py
+│   ├── win_fermion_representation_test.py
+│   ├── win_constants_test.py
+│   ├── win_torus_spectrum.py
+│   ├── win_spin_structures.py
+│   ├── win_kL_derivation.py
+│   └── win_entropy_ordering.py
+├── 09_Interactive_Widgets/
+├── paper.md
+└── README.md
+```
 
-### Code Structure
+---
+
+## 12. Reproducibility
+
+All calculations are reproducible using **Python 3.8+** with standard scientific libraries. The algebraic verifications use exact rational arithmetic.
 
 | File | Purpose |
-|------|---------|
-| `win_partitions_test.py` | Verifies p(d) = d + 1 unique at d = 4 |
-| `win_sm_algebraic_embedding.py` | Verifies SO(64) → SM inclusion |
+|---|---|
+| `win_partitions_test.py` | Verifies `p(d) = d + 1` unique at `d = 4` |
+| `win_sm_algebraic_embedding.py` | Verifies `SO(64) → SM` inclusion |
 | `win_fermion_representation_test.py` | Verifies 16-state decomposition |
-| `win_constants_test.py` | Verifies constants from d, H, V, N |
+| `win_constants_test.py` | Verifies constants from `d, H, V, N` |
 | `win_torus_spectrum.py` | Verifies 8×8 torus and 14-fold degeneracy at λ = 4 |
 | `win_spin_structures.py` | Verifies four spin structures, mode counts 14, 7, 7, 3 |
-| `win_kL_derivation.py` | Verifies kL derivation |
+| `win_kL_derivation.py` | Verifies `kL` derivation |
 | `win_entropy_ordering.py` | Verifies Spearman 0.998 correlation |
 
 ---
 
-## 12. Conclusion
+## 13. Related Documents
+
+- **[Particle Spectrum from the 8×8 Torus](docs/particle_spectrum.md)** — A 14-parameter model for the N/4 values
+- **[Standard Model Matter Representations](docs/sm_matter_representations.md)** — Standard GUT derivation used as input to WIN
+- **[WIN Validation Status](docs/validation_status.md)** — The validation ledger
+- **[The Machine](docs/the_machine.md)** — A descriptive account of the substrate
+
+---
+
+## 14. Conclusion
 
 The WIN Paradigm derives the Standard Model's gauge structure, matter content, and particle ordering from a single input: the spacetime dimension `d = 4`.
 
@@ -339,19 +392,19 @@ The specific N/4 magnitudes, the interaction, and the `1/180` and `Δ_RGE` corre
 ## Appendix A: Numerical Values
 
 | Constant | Value |
-|----------|-------|
-| d | 4 |
-| N | 64 |
-| H | 16 |
-| V | 48 |
-| kL (derived) | 38.442527 |
-| kL (observed) | 38.442488 |
+|---|---|
+| `d` | 4 |
+| `N` | 64 |
+| `H` | 16 |
+| `V` | 48 |
+| `kL` (derived) | 38.442527 |
+| `kL` (observed) | 38.442488 |
 | Mode count at λ = 4 | 14 |
 | Spin structure counts | 14, 7, 7, 3 |
 | Entropy-N/4 Spearman | 0.998 |
-| m_H | 124.97 GeV |
-| sin²θ_W | 0.23135 |
-| α_s(M_Z) | 0.117900 |
+| `m_H` | 124.97 GeV |
+| `sin²θ_W` | 0.23135 |
+| `α_s(M_Z)` | 0.117900 |
 
 ---
 
@@ -360,3 +413,23 @@ The specific N/4 magnitudes, the interaction, and the `1/180` and `Δ_RGE` corre
 Open-source for independent verification and peer review.
 
 **Copyright © 2026 Stanley Preschutti. All Rights Reserved.**
+
+---
+
+## Citation
+
+If you use this work, please cite:
+
+```bibtex
+@misc{preschutti2026win,
+  title  = {Warped Information Number (WIN) Paradigm: A Dimensional-Reduction Framework Deriving the Standard Model Gauge Structure from the Spacetime Dimension},
+  author = {Preschutti, Stanley},
+  year   = {2026},
+  note   = {Preprint, under independent verification},
+  url    = {https://github.com/007STAN/WIN-PARADIGM-VALIDATION}
+}
+```
+
+---
+
+**For independent verification and peer review.**
