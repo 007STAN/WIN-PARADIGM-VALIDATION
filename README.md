@@ -2,7 +2,7 @@
 
 **A Dimensional-Reduction Framework Deriving the Standard Model from the Spacetime Dimension**
 
-**Author:** Stanley Preschutti (Entropia Research Institute / Information Physics Institute)
+**Author:** Stanley Preschutti ( Information Physics Institute)
 **ORCID:** [0009-0004-5445-1744](https://orcid.org/0009-0004-5445-1744)
 **Status:** Preprint — Under Independent Verification
 **Date:** September 14, 2026
