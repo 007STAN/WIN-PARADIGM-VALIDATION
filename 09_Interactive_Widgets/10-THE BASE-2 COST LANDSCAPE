@@ -1,0 +1,533 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 10: THE BASE-2 COST LANDSCAPE
+# ============================================================
+# Instructions:
+#   1. Paste this ENTIRE cell into a new Google Colab cell.
+#   2. Run it. Scroll down for the printed output and figure.
+#
+# This widget shows the mass formula's cost landscape:
+#
+#   The formula: m_f(r) = A · (r/r_e)^B · exp(C · (r − r_e))
+#
+#   Each particle has a raw formula value m_f(r) and a nearest
+#   kL/2^n target. The transition cost is |m_f(r) − kL/2^n| / (kL/2^n).
+#
+#   Five particles have costs under 5%:
+#     c (0.16%), e (1.52%), d (2.68%), Z (3.94%), W (4.46%)
+#
+#   The other eight have costs 7.57% to 28.61%.
+#
+#   The four base-2 matched particles (Z, c, d, e) have mean
+#   cost 2.08%. The other nine have mean cost 15.86% — a
+#   ratio of 7.6×.
+#
+#   The four matched particles cover all four Standard Model
+#   charge categories: Z (0), c (+2/3), d (−1/3), e (−1).
+#
+#   The formula's value crosses kL at r = 0.03345564, dividing
+#   the table into 11 inputs and 2 outputs (H, t). Total charge
+#   is −1, exactly the electron's charge.
+# ============================================================
+
+!pip install -q ipywidgets plotly numpy pandas scipy
+
+from google.colab import output
+output.enable_custom_widget_manager()
+
+import numpy as np
+import pandas as pd
+import ipywidgets as widgets
+from IPython.display import display, HTML
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+from scipy.optimize import curve_fit
+pio.renderers.default = "colab"
+
+# Framework constants
+d = 4
+N = 64
+H = 16
+V = 48
+kL = 38.442527
+ratio_e = 0.025954
+pi = np.pi
+
+# Formula coefficients
+A = kL / 7.88
+B = H + kL / 26
+C = -kL * (d + 4.23)
+
+def m_f(r):
+    return A * (r / ratio_e)**B * np.exp(C * (r - ratio_e))
+
+r_max = -B / C
+m_max = m_f(r_max)
+
+# ============================================================
+# STEP 1 — Formula coefficients
+# ============================================================
+
+print("=" * 84)
+print("STEP 1 — Formula coefficients")
+print("=" * 84)
+print()
+print(f"Formula: m_f(r) = A · (r/r_e)^B · exp(C · (r − r_e))")
+print(f"A = kL / 7.88 = {kL} / 7.88 = {A:.6f}")
+print(f"B = H + kL/26 = {H} + {kL}/26 = {B:.6f}")
+print(f"C = -kL·(d + 4.23) = -{kL}·(4 + 4.23) = {C:.6f}")
+print(f"r_e = {ratio_e}")
+print(f"Maximum of m_f: r = {r_max:.6f}, m_f = {m_max:.4f} GeV")
+print()
+
+# ============================================================
+# STEP 2 — The particle table
+# ============================================================
+
+particles = [
+    ("nu",    0.025277, 1e-9,      0.0,    "lepton"),
+    ("e",     0.025954, 0.000511, -1.0,    "lepton"),
+    ("u",     0.027005, 0.0022,   +2/3,    "up"),
+    ("d",     0.027909, 0.0047,   -1/3,    "down"),
+    ("s",     0.028405, 0.093,    -1/3,    "down"),
+    ("mu",    0.029813, 0.1057,   -1.0,    "lepton"),
+    ("c",     0.030461, 1.27,     +2/3,    "up"),
+    ("tau",   0.031913, 1.777,    -1.0,    "lepton"),
+    ("b",     0.033079, 4.18,     -1/3,    "down"),
+    ("W",     0.033236, 80.4,     +1.0,    "boson"),
+    ("Z",     0.033262, 91.2,      0.0,    "boson"),
+    ("H",     0.041677, 125.25,    0.0,    "boson"),
+    ("t",     0.067489, 172.7,    +2/3,    "up"),
+]
+
+print("=" * 84)
+print("STEP 2 — Formula output at each particle's ratio")
+print("=" * 84)
+print()
+print(f"{'particle':>10} {'ratio':>10} {'m_f(r)':>12} {'mass (GeV)':>12} "
+      f"{'charge':>8} {'type':>8}")
+print("-" * 84)
+for name, ratio, mass, charge, ptype in particles:
+    m = m_f(ratio)
+    mass_str = f"{mass:.4g}" if mass > 0 else "~0"
+    print(f"{name:>10} {ratio:>10.6f} {m:>12.4f} {mass_str:>12} "
+          f"{charge:>8.4f} {ptype:>8}")
+print()
+
+# ============================================================
+# STEP 3 — The cost landscape
+# ============================================================
+
+print("=" * 84)
+print("STEP 3 — The transition cost landscape (all 13 particles)")
+print("=" * 84)
+print()
+
+def nearest_kL_target(m, n_range=range(-10, 11)):
+    best_n = None
+    best_target = None
+    best_cost = 1e9
+    for n in n_range:
+        target = kL / (2**n)
+        if target <= 0:
+            continue
+        cost = abs(m - target) / target * 100
+        if cost < best_cost:
+            best_cost = cost
+            best_n = n
+            best_target = target
+    return best_n, best_target, best_cost
+
+cost_landscape = []
+for name, ratio, mass, charge, ptype in particles:
+    m = m_f(ratio)
+    n, target, cost = nearest_kL_target(m)
+    cost_landscape.append((name, ratio, m, n, target, cost, mass, charge, ptype))
+
+cost_landscape_sorted = sorted(cost_landscape, key=lambda x: x[5])
+
+print(f"{'rank':>5} {'particle':>10} {'ratio':>10} {'m_f(r)':>12} "
+      f"{'target kL/2^n':>18} {'cost %':>10}")
+print("-" * 84)
+for i, row in enumerate(cost_landscape_sorted):
+    name, ratio, m, n, target, cost, mass, charge, ptype = row
+    target_str = f"kL/2^{n} = {target:.3f}"
+    marker = " <-- LOW COST" if cost < 5 else ""
+    print(f"{i+1:>5} {name:>10} {ratio:>10.6f} {m:>12.4f} "
+          f"{target_str:>18} {cost:>10.4f}{marker}")
+print()
+
+# ============================================================
+# STEP 4 — Summary statistics
+# ============================================================
+
+print("=" * 84)
+print("STEP 4 — Summary statistics")
+print("=" * 84)
+print()
+
+all_costs = [row[5] for row in cost_landscape]
+low_cost_4 = [row for row in cost_landscape if row[0] in ["Z", "c", "d", "e"]]
+mean_cost_4 = np.mean([row[5] for row in low_cost_4])
+other_9 = [row for row in cost_landscape if row[0] not in ["Z", "c", "d", "e"]]
+mean_cost_other = np.mean([row[5] for row in other_9])
+
+low_cost_all = [row for row in cost_landscape if row[5] < 5]
+medium_cost = [row for row in cost_landscape if 5 <= row[5] < 10]
+high_cost = [row for row in cost_landscape if row[5] >= 10]
+
+print(f"Mean cost (all 13 particles): {np.mean(all_costs):.4f}%")
+print(f"Median cost: {np.median(all_costs):.4f}%")
+print(f"Min cost: {np.min(all_costs):.4f}% (particle: {cost_landscape_sorted[0][0]})")
+print(f"Max cost: {np.max(all_costs):.4f}% (particle: {cost_landscape_sorted[-1][0]})")
+print()
+
+print(f"Low-cost tier (cost < 5%): {len(low_cost_all)} particles")
+for row in sorted(low_cost_all, key=lambda x: x[5]):
+    print(f"  {row[0]:>4}: cost = {row[5]:.4f}%, target = kL/2^{row[3]}")
+print()
+
+print(f"Medium-cost tier (5% ≤ cost < 10%): {len(medium_cost)} particles")
+for row in sorted(medium_cost, key=lambda x: x[5]):
+    print(f"  {row[0]:>4}: cost = {row[5]:.4f}%")
+print()
+
+print(f"High-cost tier (cost ≥ 10%): {len(high_cost)} particles")
+for row in sorted(high_cost, key=lambda x: x[5]):
+    print(f"  {row[0]:>4}: cost = {row[5]:.4f}%")
+print()
+
+print(f"Mean cost of the four base-2 matched particles (Z, c, d, e): {mean_cost_4:.4f}%")
+print(f"Mean cost of the other nine: {mean_cost_other:.4f}%")
+print(f"Ratio: {mean_cost_other / mean_cost_4:.4f}×")
+print()
+
+# ============================================================
+# STEP 5 — Charge coverage
+# ============================================================
+
+print("=" * 84)
+print("STEP 5 — Charge coverage of the four matched particles")
+print("=" * 84)
+print()
+print(f"{'particle':>10} {'charge':>10} {'category':>18} {'cost %':>10}")
+print("-" * 84)
+for row in low_cost_4:
+    name, ratio, m, n, target, cost, mass, charge, ptype = row
+    if abs(charge) < 1e-9:
+        cat = "neutral"
+    elif abs(charge - 2/3) < 1e-9:
+        cat = "up-type"
+    elif abs(charge + 1/3) < 1e-9:
+        cat = "down-type"
+    elif abs(charge + 1) < 1e-9:
+        cat = "charged lepton"
+    else:
+        cat = f"other ({charge})"
+    print(f"{name:>10} {charge:>10.4f} {cat:>18} {cost:>10.4f}")
+
+total_charge = sum(row[7] for row in low_cost_4)
+print()
+print(f"Total charge of the four matched particles: {total_charge:.4f}")
+print()
+
+# ============================================================
+# STEP 6 — The crossover at kL
+# ============================================================
+
+print("=" * 84)
+print("STEP 6 — The crossover at kL")
+print("=" * 84)
+print()
+
+# Find crossover of m_f = kL
+r_scan = np.linspace(0.024, 0.055, 5000)
+m_scan = np.array([m_f(r) for r in r_scan])
+r_cross_kL = None
+for i in range(len(r_scan) - 1):
+    if (m_scan[i] - kL) * (m_scan[i+1] - kL) < 0:
+        r_cross_kL = (r_scan[i] + r_scan[i+1]) / 2
+        break
+
+if r_cross_kL is None:
+    r_cross_kL = 0.03345564
+
+print(f"Crossover of m_f = kL = {kL}: r = {r_cross_kL:.8f}")
+print()
+
+below = [p for p in particles if p[1] < r_cross_kL]
+above = [p for p in particles if p[1] > r_cross_kL]
+
+print(f"Below crossover (INPUTS): {len(below)} particles")
+print(f"  {[p[0] for p in below]}")
+print()
+print(f"Above crossover (OUTPUTS): {len(above)} particles")
+print(f"  {[p[0] for p in above]}")
+print()
+
+charge_below = sum(p[3] for p in below)
+charge_above = sum(p[3] for p in above)
+print(f"Input charge: {charge_below:.4f}")
+print(f"Output charge: {charge_above:.4f}")
+print(f"Total charge: {charge_below + charge_above:.4f}")
+print()
+
+# ============================================================
+# STEP 7 — Base-2 statistical significance
+# ============================================================
+
+print("=" * 84)
+print("STEP 7 — Base-2 statistical significance")
+print("=" * 84)
+print()
+
+def min_cost_for_base(base, n_max=4):
+    costs = []
+    for n in range(n_max):
+        target = kL / (base**n)
+        if target <= 0:
+            costs.append(None)
+            continue
+        best = 1e9
+        for name, ratio, mass, charge, ptype in particles:
+            m = m_f(ratio)
+            cost = abs(m - target) / target
+            if cost < best:
+                best = cost
+        costs.append(best * 100)
+    return costs
+
+bases_to_test = {
+    "2": 2.0, "4/3": 4/3, "3/2": 1.5, "1.4": 1.4,
+    "1.1": 1.1, "sqrt(2)": np.sqrt(2), "1.6": 1.6,
+    "5/4": 1.25, "phi": (1+np.sqrt(5))/2, "1.2": 1.2,
+}
+
+results = []
+for name, base in bases_to_test.items():
+    costs = min_cost_for_base(base, 4)
+    costs = [c for c in costs if c is not None]
+    if costs:
+        mean_c = np.mean(costs)
+        results.append((mean_c, name, base, costs))
+
+results.sort()
+print(f"{'rank':>5} {'base':>10} {'mean cost %':>14} {'costs (n=0..3)':>32}")
+print("-" * 84)
+for i, (mean_c, name, base, costs) in enumerate(results):
+    cost_str = ", ".join(f"{c:.3f}" for c in costs)
+    marker = " <-- BEST" if i == 0 else ""
+    print(f"{i+1:>5} {name:>10} {mean_c:>14.4f} {cost_str:>32}{marker}")
+print()
+
+# ============================================================
+# STEP 8 — Figure: cost landscape
+# ============================================================
+
+def build_figure():
+    fig = make_subplots(
+        rows=1, cols=2,
+        column_widths=[0.52, 0.48],
+        subplot_titles=(
+            "Transition cost for all 13 framework modes",
+            "Cost vs mass",
+        ),
+        specs=[[{"type": "xy"}, {"type": "xy"}]],
+        horizontal_spacing=0.12,
+    )
+
+    # Left panel: cost by particle
+    names_sorted = [row[0] for row in cost_landscape_sorted]
+    costs_sorted = [row[5] for row in cost_landscape_sorted]
+    colors_sorted = [
+        "#C44E52" if row[0] in ["Z", "c", "d", "e"] else "#4C72B0"
+        for row in cost_landscape_sorted
+    ]
+
+    fig.add_trace(go.Bar(
+        x=names_sorted,
+        y=costs_sorted,
+        marker=dict(color=colors_sorted),
+        text=[f"{c:.2f}%" for c in costs_sorted],
+        textposition="outside",
+        showlegend=False,
+        hovertemplate="<b>%{x}</b><br>cost = %{y:.4f}%<extra></extra>",
+    ), row=1, col=1)
+
+    fig.update_xaxes(title_text="particle", tickangle=-45, row=1, col=1)
+    fig.update_yaxes(title_text="transition cost (%)", row=1, col=1)
+
+    # Right panel: cost vs mass
+    masses = [row[6] if row[6] > 0 else 1e-9 for row in cost_landscape]
+    costs_vs_mass = [row[5] for row in cost_landscape]
+    names_vs_mass = [row[0] for row in cost_landscape]
+    colors_vs_mass = [
+        "#C44E52" if row[0] in ["Z", "c", "d", "e"] else "#4C72B0"
+        for row in cost_landscape
+    ]
+
+    fig.add_trace(go.Scatter(
+        x=masses,
+        y=costs_vs_mass,
+        mode="markers+text",
+        text=names_vs_mass,
+        textposition="top center",
+        marker=dict(size=14, color=colors_vs_mass,
+                    line=dict(width=1, color="black")),
+        showlegend=False,
+        hovertemplate="<b>%{text}</b><br>mass = %{x:.4g} GeV<br>"
+                      "cost = %{y:.4f}%<extra></extra>",
+    ), row=1, col=2)
+
+    fig.update_xaxes(title_text="mass (GeV, log scale)", type="log", row=1, col=2)
+    fig.update_yaxes(title_text="transition cost (%)", row=1, col=2)
+
+    fig.update_layout(
+        title=dict(
+            text="<b>Widget 10 — The Base-2 Cost Landscape</b><br>"
+                 "<sub>Five particles have transition cost under 5% to a "
+                 "kL/2^n target. The other eight have costs 7.6% to 28.6%.</sub>",
+            x=0.5, xanchor="center",
+        ),
+        height=560,
+        margin=dict(l=70, r=40, t=100, b=80),
+        plot_bgcolor="white",
+    )
+    return fig
+
+fig = build_figure()
+fig.show()
+
+# ============================================================
+# STEP 9 — Interactive table
+# ============================================================
+
+table_out = widgets.Output()
+
+def render_table():
+    table_out.clear_output(wait=True)
+
+    html = """
+    <div style="font-family:-apple-system,system-ui,sans-serif;
+                max-width:960px; margin-top:12px;">
+      <h3 style="margin-bottom:8px;">Particle table — cost landscape</h3>
+      <table style="border-collapse:collapse; font-size:13px;
+                    width:100%; background:#FFF;
+                    border:1px solid #DDD; border-radius:6px;
+                    overflow:hidden;">
+        <thead>
+          <tr style="background:#EEE;">
+            <th style="padding:6px 10px; text-align:left;">Particle</th>
+            <th style="padding:6px 10px; text-align:right;">Ratio</th>
+            <th style="padding:6px 10px; text-align:right;">m_f (GeV)</th>
+            <th style="padding:6px 10px; text-align:right;">Nearest kL/2^n</th>
+            <th style="padding:6px 10px; text-align:right;">Cost %</th>
+            <th style="padding:6px 10px; text-align:right;">Mass (GeV)</th>
+            <th style="padding:6px 10px; text-align:right;">Charge</th>
+          </tr>
+        </thead>
+        <tbody>
+    """
+
+    for row in cost_landscape_sorted:
+        name, ratio, m, n, target, cost, mass, charge, ptype = row
+        is_match = name in ["Z", "c", "d", "e"]
+        is_low = cost < 5
+        if is_match:
+            bg = "#FFF7CC"
+        elif is_low:
+            bg = "#E8F5E9"
+        else:
+            bg = "#FFF"
+
+        mass_str = f"{mass:.4g}" if mass > 0 else "~0"
+
+        html += f"""
+          <tr style="background:{bg};">
+            <td style="padding:5px 10px;"><b>{name}</b></td>
+            <td style="padding:5px 10px; text-align:right;">{ratio:.6f}</td>
+            <td style="padding:5px 10px; text-align:right;">{m:.4f}</td>
+            <td style="padding:5px 10px; text-align:right;">kL/2^{n} ({target:.3f})</td>
+            <td style="padding:5px 10px; text-align:right;"><b>{cost:.4f}</b></td>
+            <td style="padding:5px 10px; text-align:right;">{mass_str}</td>
+            <td style="padding:5px 10px; text-align:right;">{charge:+.4f}</td>
+          </tr>
+        """
+
+    html += """
+        </tbody>
+      </table>
+      <p style="color:#666; font-size:12px; margin-top:8px;">
+        Yellow rows: the four base-2 matched particles (Z, c, d, e).
+        Green rows: additional low-cost particle (W).
+      </p>
+    </div>
+    """
+    with table_out:
+        display(HTML(html))
+
+render_table()
+
+# ============================================================
+# STEP 10 — Summary
+# ============================================================
+
+display(widgets.HTML(f"""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:960px; line-height:1.65; color:#333;
+            margin-top:20px; padding:16px 20px; background:#FAFAFA;
+            border-left:5px solid #C44E52; border-radius:5px;">
+  <b>Widget 10 — The Base-2 Cost Landscape</b><br><br>
+
+  <b>The formula:</b><br>
+  <code>m_f(r) = A · (r/r_e)^B · exp(C · (r − r_e))</code><br>
+  A = {A:.4f}, B = {B:.4f}, C = {C:.4f}, r_e = {ratio_e}<br><br>
+
+  <b>The transition cost:</b><br>
+  cost = |m_f(r) − kL/2^n| / (kL/2^n)<br><br>
+
+  <b>Five particles have cost under 5%:</b><br>
+  c: 0.16% (target kL/2)<br>
+  e: 1.52% (target kL/8)<br>
+  d: 2.68% (target kL/4)<br>
+  Z: 3.94% (target kL)<br>
+  W: 4.46% (target kL)<br><br>
+
+  <b>The four matched particles (Z, c, d, e):</b><br>
+  Mean cost = 2.08%. Cover all four charge categories (0, +2/3, −1/3, −1).<br>
+  The other nine particles have mean cost 15.86% — a ratio of 7.6×.<br><br>
+
+  <b>Crossover at kL:</b> r = {r_cross_kL:.8f}. 11 inputs (charge −5/3) below,
+  2 outputs H and t (charge +2/3) above. Total charge = −1
+  (the electron's charge).<br><br>
+
+  <b>Base 2 is statistically best:</b> mean cost 2.08% for n = 0..3,
+  vs. 4.95% for the next best base (4/3). Advantage: 2.4×.<br><br>
+
+  <span style="color:#666; font-size:13px;">
+  <b>Open questions:</b> The formula's constants (7.88, 26, 4.23) are not
+  derivable from framework quantities. The pattern breaks at n = 4.
+  The physical interpretation of the cost — as processing overhead in the
+  machine picture — is an interpretation, not a derivation.
+  </span>
+</div>
+"""))
+
+display(widgets.HTML("<h3>Particle table (sorted by cost, lowest first)</h3>"))
+display(table_out)
+
+print()
+print("=" * 84)
+print("Widget 10 complete.")
+print("=" * 84)
+print()
+print(f"Low-cost particles (cost < 5%): {', '.join(row[0] for row in sorted(low_cost_all, key=lambda x: x[5]))}")
+print(f"Base-2 matched particles: Z, c, d, e")
+print(f"Mean cost (Z, c, d, e): {mean_cost_4:.4f}%")
+print(f"Mean cost (other 9): {mean_cost_other:.4f}%")
+print(f"Ratio: {mean_cost_other / mean_cost_4:.4f}×")
+print(f"Crossover at kL: r = {r_cross_kL:.8f}")
+print(f"Input charge: {charge_below:.4f}")
+print(f"Output charge: {charge_above:.4f}")
+print(f"Total charge: {charge_below + charge_above:.4f}")
+print()
