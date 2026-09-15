@@ -1,21 +1,23 @@
 # ============================================================
-# WIN PARADIGM — WIDGET 3: THE 8x8 TORUS LAPLACIAN SPECTRUM
+# WIN PARADIGM — WIDGET 5: THE 8x8 TORUS SPECTRUM
 # ============================================================
 # Instructions:
-#   1. Open a Google Colab notebook.
-#   2. Paste this ENTIRE cell into a new code cell.
-#   3. Run it. Scroll down for the interactive visualization.
+#   1. Paste this ENTIRE cell into a new Google Colab cell.
+#   2. Run it. Scroll down for the interactive figure.
 #
-# The substrate is an 8x8 torus with periodic boundaries.
-# We use the standard 5-point discrete Laplacian:
+# This widget computes the spectrum of the discrete 5-point
+# Laplacian on an 8x8 torus with periodic boundary conditions:
 #
-#     lambda(n1,n2) = 4 - 2*cos(2*pi*n1/8) - 2*cos(2*pi*n2/8)
+#     lambda(n1, n2) = 4 - 2*cos(2*pi*n1/8) - 2*cos(2*pi*n2/8)
 #
-# We compute the actual spectrum, find the largest degeneracy
-# (which is the candidate particle multiplet), and highlight it.
+# The full spectrum is printed for verification. The 14-fold
+# degeneracy at lambda = 4 is verified by direct enumeration
+# and shown in red in the figure.
+#
+# The widget also lets you click any eigenvalue bar to see
+# which (n1, n2) modes contribute to it.
 # ============================================================
 
-# --- Install dependencies ---
 !pip install -q ipywidgets plotly numpy
 
 from google.colab import output
@@ -28,38 +30,38 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.io as pio
 pio.renderers.default = "colab"
+from collections import defaultdict
 
 # ============================================================
-# COMPUTE THE SPECTRUM (DISCRETE TORUS LAPLACIAN)
+# COMPUTE THE SPECTRUM
+# ============================================================
+# On an LxL torus with periodic boundaries, the discrete
+# 5-point Laplacian has eigenfunctions
+#     psi(n1, n2)(x, y) = cos(2*pi*(n1*x + n2*y)/L)
+# and eigenvalues
+#     lambda(n1, n2) = 4 - 2*cos(2*pi*n1/L) - 2*cos(2*pi*n2/L)
+#
+# We enumerate all L*L = 64 modes and group by eigenvalue.
 # ============================================================
 
 L = 8
-
-def lambda_of(n1, n2, L=8):
-    """5-point discrete Laplacian on an LxL periodic lattice."""
-    return (4
-            - 2 * np.cos(2 * np.pi * n1 / L)
-            - 2 * np.cos(2 * np.pi * n2 / L))
+N_TOTAL = L * L
 
 modes = []
 for n1 in range(L):
     for n2 in range(L):
-        m1 = n1 if n1 <= L // 2 else n1 - L
-        m2 = n2 if n2 <= L // 2 else n2 - L
+        lam = 4.0 - 2.0 * np.cos(2 * np.pi * n1 / L) \
+                   - 2.0 * np.cos(2 * np.pi * n2 / L)
         modes.append({
-            "n1": m1, "n2": m2,
-            "n1_wrapped": n1, "n2_wrapped": n2,
-            "lambda": lambda_of(m1, m2, L),
+            "n1": n1, "n2": n2,
+            "lambda_raw": lam,
+            "lambda": round(lam, 6),
         })
 
-# Group by rounded eigenvalue
-for m in modes:
-    m["lambda_round"] = round(m["lambda"], 4)
-
-from collections import defaultdict
+# Group by eigenvalue (rounded to avoid float noise)
 groups = defaultdict(list)
 for m in modes:
-    groups[m["lambda_round"]].append(m)
+    groups[m["lambda"]].append(m)
 
 spectrum = []
 for lam in sorted(groups.keys()):
@@ -69,31 +71,48 @@ for lam in sorted(groups.keys()):
         "members": groups[lam],
     })
 
-# Find the largest degeneracy in the spectrum.
-# This is our "particle multiplet" candidate.
-max_deg = max(s["degeneracy"] for s in spectrum)
-MULTIPLET_ENTRIES = [s for s in spectrum if s["degeneracy"] == max_deg]
-MULTIPLET_LAMBDA = MULTIPLET_ENTRIES[0]["lambda"] if MULTIPLET_ENTRIES else None
-MULTIPLET_MEMBERS = [m for s in MULTIPLET_ENTRIES for m in s["members"]]
+# ============================================================
+# DIAGNOSTIC PRINTOUT
+# ============================================================
 
-# Diagnostic printout so the user can see what was actually computed.
-print("=" * 62)
-print("8x8 Torus Laplacian Spectrum (5-point stencil)")
-print("=" * 62)
-print(f"{'lambda':>10} {'degeneracy':>12}  {'n1^2+n2^2 values':>20}")
+print("=" * 70)
+print("8x8 torus discrete 5-point Laplacian spectrum")
+print("lambda(n1, n2) = 4 - 2*cos(2*pi*n1/8) - 2*cos(2*pi*n2/8)")
+print("=" * 70)
+print(f"{'lambda':>10} {'degeneracy':>12}   {'(n1, n2) pairs':<40}")
+print("-" * 70)
+
 for s in spectrum:
-    ns = sorted({m["n1"]**2 + m["n2"]**2 for m in s["members"]})
-    print(f"{s['lambda']:>10.4f} {s['degeneracy']:>12}  {str(ns):>20}")
-print("-" * 62)
-print(f"Largest degeneracy: {max_deg}  at lambda = {MULTIPLET_LAMBDA}")
-print("=" * 62)
+    pairs = ", ".join(f"({m['n1']},{m['n2']})" for m in s["members"])
+    print(f"{s['lambda']:>10.4f} {s['degeneracy']:>12}   {pairs}")
+
+total = sum(s["degeneracy"] for s in spectrum)
+print("-" * 70)
+print(f"Total modes: {total}  (expected {N_TOTAL})")
+print()
+
+# Find the 14-fold degeneracy explicitly
+fold14 = [s for s in spectrum if s["degeneracy"] == 14]
+if fold14:
+    s14 = fold14[0]
+    print(f"14-fold degeneracy found at lambda = {s14['lambda']:.4f}")
+    print(f"  Members: {', '.join(f'({m['n1']},{m['n2']})' for m in s14['members'])}")
+else:
+    print("No 14-fold degeneracy found.")
+print()
+
+# Check that the paper's claim holds
+if any(s["degeneracy"] == 14 and abs(s["lambda"] - 4.0) < 1e-6
+       for s in spectrum):
+    print("CONFIRMED: lambda = 4.000 has degeneracy 14 (paper's claim).")
+else:
+    print("NOT CONFIRMED: lambda = 4.000 does not have degeneracy 14.")
 
 # ============================================================
 # FIGURE BUILDER
 # ============================================================
 
-HIGHLIGHT_COLOR = "#C44E52"
-NORMAL_COLOR = "#4C72B0"
+HIGHLIGHT_LAMBDA = 4.0
 
 def wavefunction(n1, n2, L=8):
     x = np.arange(L)
@@ -101,7 +120,7 @@ def wavefunction(n1, n2, L=8):
     X, Y = np.meshgrid(x, y, indexing="ij")
     return np.cos(2 * np.pi * (n1 * X + n2 * Y) / L)
 
-def build_torus_figure(selected_idx=None):
+def build_figure(selected_idx=None):
     if selected_idx is None:
         selected_idx = 0
     selected_idx = max(0, min(selected_idx, len(modes) - 1))
@@ -110,8 +129,8 @@ def build_torus_figure(selected_idx=None):
     bar_x = [s["lambda"] for s in spectrum]
     bar_y = [s["degeneracy"] for s in spectrum]
     bar_colors = [
-        HIGHLIGHT_COLOR if abs(s["lambda"] - MULTIPLET_LAMBDA) < 1e-6
-        else NORMAL_COLOR
+        "#C44E52" if abs(s["lambda"] - HIGHLIGHT_LAMBDA) < 1e-6
+        else "#4C72B0"
         for s in spectrum
     ]
     bar_text = [
@@ -123,7 +142,7 @@ def build_torus_figure(selected_idx=None):
         rows=1, cols=3,
         column_widths=[0.42, 0.33, 0.25],
         subplot_titles=(
-            "Laplacian spectrum of the 8x8 torus",
+            "Spectrum of the 8x8 torus Laplacian",
             "Wavefunction of the selected mode",
             "Mode details",
         ),
@@ -139,14 +158,15 @@ def build_torus_figure(selected_idx=None):
         showlegend=False,
     ), row=1, col=1)
 
-    if MULTIPLET_LAMBDA is not None:
+    # Annotate the 14-fold degeneracy
+    if fold14:
         fig.add_annotation(
-            x=MULTIPLET_LAMBDA, y=max_deg + 0.7,
-            text=f"<b>{max_deg}-fold</b><br>"
-                 f"<span style='font-size:10px'>particle multiplet?</span>",
-            showarrow=True, arrowhead=2, arrowcolor=HIGHLIGHT_COLOR,
-            ax=0, ay=-45,
-            font=dict(size=11, color=HIGHLIGHT_COLOR),
+            x=HIGHLIGHT_LAMBDA, y=15.5,
+            text="<b>14-fold</b><br>"
+                 "<span style='font-size:10px'>particle multiplet</span>",
+            showarrow=True, arrowhead=2, arrowcolor="#C44E52",
+            ax=0, ay=-50,
+            font=dict(size=11, color="#C44E52"),
             row=1, col=1,
         )
 
@@ -163,10 +183,11 @@ def build_torus_figure(selected_idx=None):
     ), row=1, col=3)
 
     lam = mode["lambda"]
-    is_multiplet = MULTIPLET_LAMBDA is not None and abs(lam - MULTIPLET_LAMBDA) < 1e-6
-    status_color = HIGHLIGHT_COLOR if is_multiplet else NORMAL_COLOR
-    status_text = "PARTICLE MULTIPLET" if is_multiplet else "Ordinary mode"
-    deg_here = len([m for m in modes if abs(m["lambda"] - lam) < 1e-6])
+    is_multiplet = abs(lam - HIGHLIGHT_LAMBDA) < 1e-6
+    status_color = "#C44E52" if is_multiplet else "#4C72B0"
+    status_text = ("PARTICLE MULTIPLET" if is_multiplet
+                   else "Ordinary mode")
+    deg_here = len(groups[lam])
 
     fig.add_annotation(
         x=0.5, y=0.90, xref="x3 domain", yref="y3 domain",
@@ -201,9 +222,11 @@ def build_torus_figure(selected_idx=None):
         showarrow=False, align="center", font=dict(size=13),
     )
 
-    fig.update_xaxes(title_text="lambda", range=[-0.3, 8.5],
+    fig.update_xaxes(title_text="lambda",
+                     range=[-0.3, 8.5],
                      showgrid=True, gridcolor="#EEE", row=1, col=1)
-    fig.update_yaxes(title_text="degeneracy", range=[0, max_deg + 2],
+    fig.update_yaxes(title_text="degeneracy",
+                     range=[0, 17],
                      showgrid=True, gridcolor="#EEE", row=1, col=1)
     fig.update_xaxes(showgrid=False, showticklabels=False,
                      range=[-0.5, L-0.5], row=1, col=2)
@@ -216,8 +239,9 @@ def build_torus_figure(selected_idx=None):
     fig.update_layout(
         title=dict(
             text="<b>8x8 Torus Laplacian Spectrum</b><br>"
-                 f"<sub>Largest degeneracy: {max_deg}-fold at "
-                 f"lambda = {MULTIPLET_LAMBDA}</sub>",
+                 "<sub>5-point stencil, periodic boundary conditions. "
+                 "The red bar at lambda = 4 is the 14-fold particle "
+                 "multiplet.</sub>",
             x=0.5, xanchor="center",
         ),
         height=560,
@@ -226,11 +250,13 @@ def build_torus_figure(selected_idx=None):
         showlegend=False,
         bargap=0.15,
     )
-    return fig, mode
+    return fig
 
 # ============================================================
-# INTERACTIVE CONTROLS
+# CONTROLS
 # ============================================================
+
+fig_widget = go.FigureWidget(build_figure(0))
 
 mode_slider = widgets.IntSlider(
     value=0, min=0, max=len(modes) - 1, step=1,
@@ -239,27 +265,25 @@ mode_slider = widgets.IntSlider(
     layout=widgets.Layout(width="600px"),
 )
 
-# Safely build multiplet options — if no multiplet, only "-- all modes --".
-multiplet_options = [("-- all modes --", None)]
-if MULTIPLET_MEMBERS:
-    multiplet_options.append((f"-- {max_deg}-fold multiplet --", "multiplet"))
-    for i, m in enumerate(modes):
-        if abs(m["lambda"] - MULTIPLET_LAMBDA) < 1e-6:
-            multiplet_options.append(
-                (f"mode {i}: (n1={m['n1']}, n2={m['n2']})", i)
-            )
+# Jump-to dropdown: offer the 14 multiplet members explicitly
+multiplet_indices = [i for i, m in enumerate(modes)
+                     if abs(m["lambda"] - HIGHLIGHT_LAMBDA) < 1e-6]
+dropdown_options = [("-- all modes --", None),
+                    ("-- 14-fold multiplet --", "multiplet")]
+for i in multiplet_indices:
+    m = modes[i]
+    dropdown_options.append(
+        (f"mode {i}: (n1={m['n1']}, n2={m['n2']})", i)
+    )
 
 jump_dropdown = widgets.Dropdown(
-    options=multiplet_options,
+    options=dropdown_options,
     description="Jump to:",
     layout=widgets.Layout(width="460px"),
 )
 
-initial_fig, _ = build_torus_figure(0)
-fig_widget = go.FigureWidget(initial_fig)
-
 def update_figure(idx):
-    new_fig, _ = build_torus_figure(idx)
+    new_fig = build_figure(idx)
     fig_widget.data = []
     for tr in new_fig.data:
         fig_widget.add_trace(tr)
@@ -277,13 +301,9 @@ def on_dropdown_change(change):
     val = change["new"]
     if val is None:
         return
-    if val == "multiplet":
-        # Find first multiplet member safely
-        for i, m in enumerate(modes):
-            if abs(m["lambda"] - MULTIPLET_LAMBDA) < 1e-6:
-                mode_slider.value = i
-                return
-    else:
+    if val == "multiplet" and multiplet_indices:
+        mode_slider.value = multiplet_indices[0]
+    elif isinstance(val, int):
         mode_slider.value = val
 
 jump_dropdown.observe(on_dropdown_change)
@@ -292,17 +312,16 @@ jump_dropdown.observe(on_dropdown_change)
 # RENDER
 # ============================================================
 
-display(widgets.HTML(f"""
+display(widgets.HTML("""
 <div style="font-family:-apple-system,system-ui,sans-serif;
             max-width:960px; line-height:1.55; color:#222;">
-  <h2 style="margin-bottom:4px;">Widget 3 — The 8×8 Torus Laplacian Spectrum</h2>
+  <h2 style="margin-bottom:4px;">Widget 5 — The 8x8 Torus Spectrum</h2>
   <p style="color:#666; margin-top:0;">
-    Standard 5-point discrete Laplacian on an 8×8 periodic lattice:
-    <code>λ(n₁,n₂) = 4 − 2cos(2πn₁/8) − 2cos(2πn₂/8)</code>.
-    The largest degeneracy in the spectrum is
-    <b style="color:#C44E52">{max_deg}-fold</b> at
-    <b style="color:#C44E52">λ = {MULTIPLET_LAMBDA}</b> —
-    the WIN Paradigm's candidate particle multiplet.
+    The discrete 5-point Laplacian on an 8x8 torus with periodic
+    boundary conditions. Its eigenvalue spectrum includes a
+    <b style="color:#C44E52">14-fold degeneracy at lambda = 4</b>,
+    which the WIN Paradigm identifies with the 14 Standard Model
+    particles.
   </p>
 </div>
 """))
@@ -311,26 +330,27 @@ display(jump_dropdown)
 display(mode_slider)
 display(fig_widget)
 
-display(widgets.HTML(f"""
+display(widgets.HTML("""
 <div style="font-family:-apple-system,system-ui,sans-serif;
             max-width:960px; line-height:1.55; color:#444;
             margin-top:18px; padding:14px 18px; background:#FAFAFA;
-            border-left:4px solid #C44E52; border-radius:4px;">
-  <b>What the printed spectrum above shows</b><br>
-  The exact degeneracy structure of the 8×8 torus under the
-  standard discrete Laplacian. Compare it to the paper's claim
-  of a 14-fold degeneracy at λ = 4. If they differ, the paper's
-  numbers come from a different stencil (e.g., an 8×8 spin-lattice
-  Laplacian with spin structures, or a different normalization).
-  The widget shows the honest computation so you can verify.<br><br>
+            border-left:4px solid #4C72B0; border-radius:4px;">
+  <b>How to read the figure</b><br>
+  Left panel: the spectrum. Each bar is one eigenvalue of the
+  Laplacian; its height is the degeneracy (how many distinct
+  (n1, n2) modes share that eigenvalue). The red bar at
+  lambda = 4 has height 14.<br><br>
+  Middle panel: the wavefunction of the currently selected mode.
+  Right panel: the quantum numbers, eigenvalue, and degeneracy
+  of the selected mode.<br><br>
   <span style="color:#666; font-size:13px;">
-  The <b>mode count of {max_deg}</b> at λ = {MULTIPLET_LAMBDA}
-  is the largest in this spectrum. If the paper's claim is
-  14, the difference is worth investigating — it means the
-  substrate Laplacian is not the naive 5-point stencil.
+  Use the dropdown to jump directly to the 14-fold multiplet,
+  or use the slider to step through all 64 modes.
   </span>
 </div>
 """))
 
-print(f"\nDone. Largest degeneracy found: {max_deg} at lambda = {MULTIPLET_LAMBDA}.")
-print("If the paper says 14, the stencil needs revisiting.")
+print("\nDone. The printed spectrum above shows every eigenvalue")
+print("and every (n1, n2) pair that contributes to it.")
+print("Check that lambda = 4.000 has 14 pairs — that is the paper's")
+print("claim, and this cell computes it directly.")
