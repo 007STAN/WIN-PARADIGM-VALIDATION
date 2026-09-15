@@ -1,0 +1,508 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 1: THE DERIVATION CHAIN
+# ============================================================
+# Instructions:
+#   1. Open a new Google Colab notebook.
+#   2. Paste this ENTIRE cell into the first code cell.
+#   3. Run it. Scroll down for the interactive figure.
+#
+# Everything (installs, imports, data, figure, controls) is
+# self-contained in this one cell.
+# ============================================================
+
+# --- Install dependencies (Colab) ---
+!pip install -q ipywidgets plotly kaleido
+
+# --- Enable custom widget manager in Colab ---
+from google.colab import output
+output.enable_custom_widget_manager()
+
+# --- Core imports ---
+import ipywidgets as widgets
+from IPython.display import display, HTML, clear_output
+import plotly.graph_objects as go
+import plotly.io as pio
+pio.renderers.default = "colab"
+
+# ============================================================
+# THE DERIVATION CHAIN
+# ============================================================
+# Each node: id, label, equation, explanation, source, category, level.
+# Categories are color-coded in the figure.
+# Levels set the horizontal position (left-to-right = input to prediction).
+
+CHAIN = [
+    # --- Level 0: the single input ---
+    dict(id="photon", label="Photon\n(spin-1, massless)",
+         eq=r"m = 0,\ s = 1",
+         exp="The massless spin-1 particle. Starting point of the entire framework.",
+         src="WIN_Derivation_of_d4.pdf",
+         cat="input", level=0),
+
+    dict(id="helicity", label="2 helicity states",
+         eq=r"h = +1,\ -1",
+         exp="The photon has exactly two helicity (circular polarization) states. "
+             "Each is described by a complex amplitude, so each has 2 real components.",
+         src="WIN_Derivation_of_d4.pdf Section 2",
+         cat="input", level=0),
+
+    dict(id="phase4d", label="4D phase space\n(Q1, P1, Q2, P2)",
+         eq=r"(Q_1,P_1,Q_2,P_2) in R^4",
+         exp="Right helicity -> (Q1, P1). Left helicity -> (Q2, P2). "
+             "Together they span a 4-dimensional real phase space.",
+         src="WIN_Derivation_of_d4.pdf Section 3",
+         cat="input", level=0),
+
+    dict(id="wick", label="Wick rotation",
+         eq=r"theta: Euclidean -> Lorentzian",
+         exp="A rotation of the phase space that turns the Euclidean metric into a "
+             "Lorentzian one. The bridge between the photon's phase space and spacetime.",
+         src="WIN_Derivation_of_d4.pdf Sections 4-5",
+         cat="input", level=0),
+
+    dict(id="d4", label="d = 4",
+         eq=r"ds^2 = -Q1^2 + P1^2 + Q2^2 + P2^2",
+         exp="4D spacetime with Lorentzian signature. The metric oscillates with "
+             "period 2*pi in the Wick angle; a 'big bang' occurs every pi. "
+             "d=4 is not an input - it is derived.",
+         src="WIN_Derivation_of_d4.pdf Section 7",
+         cat="core", level=1),
+
+    # --- Level 2: three anchors ---
+    dict(id="anchor_comb", label="Anchor 1 (Combinatorial)\np(d) = d+1",
+         eq=r"p(4) = 5 = rank(SO(10))",
+         exp="The partition function p(d) satisfies p(d) = d+1 uniquely at d=4. "
+             "This equals the rank of SO(10).",
+         src="WIN PROOF Section 2.1",
+         cat="anchor", level=2),
+
+    dict(id="anchor_phys", label="Anchor 2 (Physical)\nrank(GUT) = d+1",
+         eq=r"rank(SM)=4  =>  rank(GUT) >= 5",
+         exp="The SM gauge group has rank 4. Including a right-handed neutrino "
+             "requires rank >= 5. The smallest simple group with rank 5 and a "
+             "16-dim spinor is SO(10).",
+         src="WIN PROOF Section 2.2",
+         cat="anchor", level=2),
+
+    dict(id="anchor_info", label="Anchor 3 (Information)\nS_self minimized",
+         eq=r"S_self = (N-64)^2 + 100(V/H-3)^2",
+         exp="The self-simulation cost function is minimized at (N,V,H)=(64,48,16). "
+             "Measures error-correction cost of encoding the visible sector in the hidden sector.",
+         src="WIN PROOF Section 2.3",
+         cat="anchor", level=2),
+
+    # --- Level 3: group theory ---
+    dict(id="so10", label="SO(10) GUT",
+         eq=r"SO(10), rank = 5",
+         exp="The Grand Unified Theory group. p(4)=5=rank(SO(10)) selects it uniquely.",
+         src="WIN PROOF Section 4.1",
+         cat="group", level=3),
+
+    dict(id="weyl16", label="Weyl spinor\n2^d = 16",
+         eq=r"dim(spinor) = 2^d = 16",
+         exp="The 16-dimensional spinor of SO(10) contains exactly one full "
+             "Standard Model generation (15 states + right-handed neutrino).",
+         src="WIN PROOF Section 4.2",
+         cat="group", level=3),
+
+    # --- Level 4: sector decomposition ---
+    dict(id="H16", label="Hidden sector\nH = 2^d = 16",
+         eq=r"H = 2^d = 16",
+         exp="The encoded copy of the visible sector. Provides redundancy for "
+             "error correction. Hidden sector reservoir.",
+         src="WIN PROOF Part I",
+         cat="sector", level=4),
+
+    dict(id="gen3", label="3 generations\nd - 1 = 3",
+         eq=r"N_gen = d - 1 = 3",
+         exp="Three generations of fermions come from d-1.",
+         src="WIN PROOF Part I",
+         cat="sector", level=4),
+
+    dict(id="V48", label="Visible sector\nV = (d-1)*2^d = 48",
+         eq=r"V = (d-1) * 2^d = 48",
+         exp="Three generations times 16 states = 48. The observable sector.",
+         src="WIN PROOF Part I",
+         cat="sector", level=4),
+
+    dict(id="N64", label="Total substrate\nN = V + H = d*2^d = d^3 = 64",
+         eq=r"N = 48 + 16 = 64",
+         exp="64 Majorana modes. The complete substrate. Emerges from six isomorphic "
+             "representations of Cl(64) - structural duality, not coincidence.",
+         src="WIN PROOF Section 8",
+         cat="substrate", level=5),
+
+    dict(id="so64", label="Cl(64) -> SO(64)\n-> SO(10) -> SM",
+         eq=r"SO(64) > SO(10) > SU(3)xSU(2)xU(1)",
+         exp="Clifford algebra Cl(64) generated by 64 Majorana modes spans SO(64). "
+             "The embedding chain recovers the Standard Model.",
+         src="WIN PROOF Section 4.1",
+         cat="substrate", level=5),
+
+    # --- Level 6: torus substrate ---
+    dict(id="torus", label="8x8 torus substrate",
+         eq=r"T^2 = R^2 / Z^2, 8x8 lattice",
+         exp="The substrate is an 8x8 torus with periodic boundary conditions. "
+             "Its Laplacian spectrum has a 14-fold degeneracy at eigenvalue lambda = 4.",
+         src="README Section 3.1",
+         cat="torus", level=6),
+
+    dict(id="spin_structures", label="4 spin structures\n(+,+), (+,-), (-,+), (-,-)",
+         eq=r"n at lambda=4:  14, 7, 7, 3",
+         exp="The torus has four spin structures. Their mode counts at lambda=4 "
+             "are 14, 7, 7, 3 - matching the SM's 14 particles, two chiral halves, "
+             "and three generations.",
+         src="README Section 3.2",
+         cat="torus", level=6),
+
+    dict(id="modes14", label="14 modes at lambda = 4",
+         eq=r"lambda = 4.000 (x14)",
+         exp="The 14-fold degeneracy at lambda=4 is the particle multiplet: "
+             "5 Substrate Eigenmodes + 9 Mesh Resonances.",
+         src="README Section 3.1",
+         cat="particles", level=7),
+
+    # --- Level 7: particles ---
+    dict(id="eigen", label="5 Substrate Eigenmodes\ndark, tau, W, Z, H",
+         eq=r"delta = 0: exact N/4",
+         exp="Particles with exact N/4 value (delta=0). Directly determined by "
+             "d=4 and H=16. The fundamental components.",
+         src="WIN PROOF Section 5.1",
+         cat="particles", level=7),
+
+    dict(id="mesh", label="9 Mesh Resonances\nnu, e, mu, u, d, s, c, b, t",
+         eq=r"delta != 0: approx N/4",
+         exp="Particles with approximate N/4 (delta != 0). Emergent from the "
+             "interaction between substrate modes.",
+         src="WIN PROOF Section 5.2",
+         cat="particles", level=7),
+
+    # --- Level 8: predictions ---
+    dict(id="kL", label="Warp factor\nkL = 38.442527",
+         eq=r"kL = N(d-1)/(d+1) + sin^2(theta_W)/(5.6 - d/(d+1)^2)",
+         exp="Derived from d=4 and the Weinberg angle. Observed kL = 38.442488. "
+             "Agreement to 0.0001%.",
+         src="README Section 6",
+         cat="prediction", level=8),
+
+    dict(id="higgs", label="Higgs mass\n125.138 GeV",
+         eq=r"m_H = sqrt(2 * lambda_eff) * v_EW",
+         exp="Predicted Higgs mass: 125.138 GeV. Experiment: 125.25 +/- 0.17 GeV. "
+             "Error: 0.090% (0.66 sigma).",
+         src="README Section 7",
+         cat="prediction", level=8),
+
+    dict(id="weinberg", label="Weinberg angle\n0.23135",
+         eq=r"sin^2(theta_W) = 3/8 - Delta_RGE + kL/(5.6*pi*100)",
+         exp="Predicted sin^2 theta_W = 0.23135. Experiment: 0.23122 +/- 0.00004. "
+             "Error: 0.06%.",
+         src="README Section 7",
+         cat="prediction", level=8),
+
+    dict(id="spectrum", label="Particle spectrum\n14/14 shells, RMS = 1.85",
+         eq=r"N/4 = (kL/(H+d)) * PR * exp(-(pi/d) * shell)",
+         exp="All 14 shells correct. RMS = 1.85 for the N/4 values. "
+             "Particle masses from a zero-parameter formula.",
+         src="README Section 4.4",
+         cat="prediction", level=8),
+]
+
+# Edges: (parent, child)
+EDGES = [
+    ("photon","helicity"), ("helicity","phase4d"), ("phase4d","wick"),
+    ("wick","d4"),
+    ("d4","anchor_comb"), ("d4","anchor_phys"), ("d4","anchor_info"),
+    ("anchor_comb","so10"),
+    ("d4","so10"), ("so10","weyl16"),
+    ("weyl16","H16"), ("d4","gen3"), ("gen3","V48"),
+    ("H16","N64"), ("V48","N64"),
+    ("N64","so64"), ("N64","torus"),
+    ("torus","spin_structures"), ("spin_structures","modes14"),
+    ("modes14","eigen"), ("modes14","mesh"),
+    ("N64","kL"), ("kL","higgs"), ("kL","weinberg"),
+    ("eigen","spectrum"), ("mesh","spectrum"),
+]
+
+# Color palette by category
+CAT_COLOR = {
+    "input":      "#4C72B0",
+    "core":       "#DD8452",
+    "anchor":     "#55A868",
+    "group":      "#C44E52",
+    "sector":     "#8172B3",
+    "substrate":  "#937860",
+    "torus":      "#DA8BC3",
+    "particles":  "#8C8C8C",
+    "prediction": "#CCB974",
+}
+
+CAT_LABEL = {
+    "input":      "Input",
+    "core":       "Core",
+    "anchor":     "Anchor",
+    "group":      "Group theory",
+    "sector":     "Sectors",
+    "substrate":  "Substrate",
+    "torus":      "Torus",
+    "particles":  "Particles",
+    "prediction": "Predictions",
+}
+
+# ============================================================
+# FIGURE BUILDER
+# ============================================================
+
+def build_figure(highlight=None):
+    """Build a Plotly figure of the derivation chain.
+
+    Layout is a layered DAG (left-to-right by 'level').
+    If `highlight` is a node id, that node and its neighbors are emphasized.
+    """
+    by_level = {}
+    for n in CHAIN:
+        by_level.setdefault(n["level"], []).append(n)
+
+    pos = {}
+    for lvl, nodes in by_level.items():
+        n = len(nodes)
+        for i, node in enumerate(nodes):
+            y = (i - (n - 1) / 2) * 1.0
+            pos[node["id"]] = (lvl * 2.2, y)
+
+    if highlight:
+        neighbors = {highlight}
+        for a, b in EDGES:
+            if a == highlight: neighbors.add(b)
+            if b == highlight: neighbors.add(a)
+    else:
+        neighbors = {n["id"] for n in CHAIN}
+
+    # --- Edges ---
+    edge_x, edge_y = [], []
+    for a, b in EDGES:
+        x0, y0 = pos[a]
+        x1, y1 = pos[b]
+        edge_x += [x0, x1, None]
+        edge_y += [y0, y1, None]
+
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y,
+        line=dict(width=1.2, color="#BBBBBB"),
+        hoverinfo="none", mode="lines", showlegend=False,
+    )
+
+    # --- Nodes ---
+    node_x, node_y, node_text, node_hover = [], [], [], []
+    node_color, node_size = [], []
+    node_line_width, node_line_color = [], []
+
+    for n in CHAIN:
+        x, y = pos[n["id"]]
+        node_x.append(x)
+        node_y.append(y)
+        node_text.append(n["label"])
+        node_hover.append(
+            f"<b>{n['label'].replace(chr(10),' ')}</b><br>"
+            f"<i>{n['eq']}</i><br><br>"
+            f"{n['exp']}<br><br>"
+            f"<span style='color:#888'>Source: {n['src']}</span>"
+        )
+        if n["id"] in neighbors:
+            node_color.append(CAT_COLOR[n["cat"]])
+            node_size.append(28)
+            node_line_width.append(2)
+            node_line_color.append("black")
+        else:
+            node_color.append("#E8E8E8")
+            node_size.append(18)
+            node_line_width.append(1)
+            node_line_color.append("#CCCCCC")
+
+    node_trace = go.Scatter(
+        x=node_x, y=node_y,
+        mode="markers+text",
+        text=node_text,
+        textposition="middle right",
+        textfont=dict(size=10),
+        hovertext=node_hover,
+        hoverinfo="text",
+        marker=dict(
+            size=node_size,
+            color=node_color,
+            line=dict(
+                width=node_line_width,
+                color=node_line_color,
+            ),
+        ),
+        showlegend=False,
+    )
+
+    # --- Legend ---
+    legend_traces = []
+    for cat, color in CAT_COLOR.items():
+        legend_traces.append(go.Scatter(
+            x=[None], y=[None], mode="markers",
+            marker=dict(size=12, color=color),
+            name=CAT_LABEL[cat], showlegend=True,
+        ))
+
+    fig = go.Figure(data=[edge_trace, node_trace] + legend_traces)
+
+    fig.update_layout(
+        title=dict(
+            text="<b>WIN Paradigm - Derivation Chain</b><br>"
+                 "<sub>Photon -> d=4 -> SO(10) -> N=64 -> 14 particles. "
+                 "Hover a node for details.</sub>",
+            x=0.5, xanchor="center",
+        ),
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.05,
+                    xanchor="center", x=0.5),
+        hovermode="closest",
+        margin=dict(l=20, r=20, t=80, b=40),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False,
+                   title=""),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False,
+                   title="", scaleanchor="x", scaleratio=0.6),
+        plot_bgcolor="white",
+        height=850,
+        dragmode="pan",
+    )
+    return fig
+
+# ============================================================
+# DETAIL PANEL + DROPDOWN
+# ============================================================
+
+detail = widgets.Output()
+selected = widgets.Dropdown(
+    options=[("-- none --", None)] + [(n["label"].replace("\n", " "), n["id"]) for n in CHAIN],
+    description="Jump to:",
+    layout=widgets.Layout(width="420px"),
+)
+
+def show_node(node_id):
+    detail.clear_output()
+    if node_id is None:
+        return
+    n = next(x for x in CHAIN if x["id"] == node_id)
+
+    preds = [a for a, b in EDGES if b == node_id]
+    succs = [b for a, b in EDGES if a == node_id]
+    pred_labels = {x["id"]: x["label"].replace("\n", " ") for x in CHAIN}
+    pred_str = ", ".join(pred_labels[p] for p in preds) or "-"
+    succ_str = ", ".join(pred_labels[s] for s in succs) or "-"
+
+    with detail:
+        display(HTML(f"""
+        <div style="border-left:6px solid {CAT_COLOR[n['cat']]};
+                    padding:14px 18px; margin:10px 0;
+                    background:#FAFAFA; border-radius:6px;
+                    font-family: -apple-system, system-ui, sans-serif;">
+          <div style="font-size:11px; color:#888; letter-spacing:1px;
+                      text-transform:uppercase;">
+            {CAT_LABEL[n['cat']]} &middot; Level {n['level']}
+          </div>
+          <h2 style="margin:4px 0 6px 0; color:#222;">
+            {n['label'].replace(chr(10), ' ')}
+          </h2>
+          <div style="font-size:16px; font-family: 'Cambria Math', serif;
+                      background:#FFF; padding:10px 14px;
+                      border:1px solid #EEE; border-radius:4px;
+                      display:inline-block; margin-bottom:10px;">
+            {n['eq']}
+          </div>
+          <p style="font-size:14px; line-height:1.55; color:#333; margin:8px 0;">
+            {n['exp']}
+          </p>
+          <div style="font-size:12px; color:#555; margin-top:10px;">
+            <b>Predecessors:</b> {pred_str}<br>
+            <b>Successors:</b> {succ_str}<br>
+            <b>Source:</b> <code>{n['src']}</code>
+          </div>
+        </div>
+        """))
+
+def on_dropdown_change(change):
+    if change["name"] == "value":
+        show_node(change["new"])
+
+selected.observe(on_dropdown_change)
+
+# ============================================================
+# GUIDED WALKTHROUGH (slider)
+# ============================================================
+
+ORDER = [
+    "photon", "helicity", "phase4d", "wick", "d4",
+    "anchor_comb", "anchor_phys", "anchor_info",
+    "so10", "weyl16",
+    "H16", "gen3", "V48", "N64", "so64",
+    "torus", "spin_structures",
+    "modes14", "eigen", "mesh",
+    "kL", "higgs", "weinberg", "spectrum",
+]
+
+step = widgets.IntSlider(
+    min=0, max=len(ORDER) - 1, step=1, value=0,
+    description="Step:",
+    continuous_update=False,
+    layout=widgets.Layout(width="600px"),
+)
+
+step_out = widgets.Output()
+
+def render_step(i):
+    step_out.clear_output(wait=True)
+    nid = ORDER[i]
+    n = next(x for x in CHAIN if x["id"] == nid)
+    with step_out:
+        display(HTML(f"""
+        <div style="font-family:-apple-system,system-ui,sans-serif;
+                    border:1px solid #DDD; border-radius:8px;
+                    padding:18px 22px; max-width:760px; background:#FFF;">
+          <div style="font-size:12px; color:#999;">
+            Step {i+1} of {len(ORDER)}
+          </div>
+          <h2 style="margin:6px 0; color:#111;">
+            {n['label'].replace(chr(10), ' ')}
+          </h2>
+          <div style="font-size:18px; font-family:'Cambria Math',serif;
+                      padding:10px 14px; background:#F7F7F7;
+                      border-radius:4px; display:inline-block;
+                      margin:6px 0;">
+            {n['eq']}
+          </div>
+          <p style="font-size:15px; line-height:1.6; color:#333;">
+            {n['exp']}
+          </p>
+          <div style="font-size:12px; color:#777;">
+            {CAT_LABEL[n['cat']]} &middot; {n['src']}
+          </div>
+        </div>
+        """))
+
+step.observe(lambda c: render_step(c["new"]) if c["name"] == "value" else None)
+
+# ============================================================
+# RENDER EVERYTHING
+# ============================================================
+
+# 1) The main interactive flowchart
+fig = build_figure()
+fig.show()
+
+# 2) Dropdown + detail panel
+display(widgets.HTML("<h3 style='font-family:sans-serif'>Explore a node</h3>"))
+display(selected)
+display(detail)
+show_node("d4")
+
+# 3) Guided walkthrough
+display(widgets.HTML("<h3 style='font-family:sans-serif'>Walk through the derivation</h3>"))
+display(step)
+display(step_out)
+render_step(0)
+
+print("\nDone. Hover any node in the figure above for details,")
+print("or use the dropdown and slider to explore.")
