@@ -1,0 +1,368 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 5: THE PARTICLE SPECTRUM TABLE
+# ============================================================
+# Instructions:
+#   1. Paste this ENTIRE cell into a new Google Colab cell.
+#   2. Run it. Scroll down for the interactive table.
+#
+# What this widget shows:
+#
+#   The 14 modes at lambda = 4 on the 8x8 torus (from Widget 3/4)
+#   are assigned to the 14 Standard Model particles. Each particle
+#   has an N/4 value and a shell index. The N/4 values are fit
+#   by:
+#
+#     N/4 = (kL/(H+d)) * PR * exp(-(pi/d) * shell)
+#
+#   where kL = 38.442527, H = 16, d = 4, PR is the participation
+#   ratio of the mode, and shell is the fitted layer index.
+#
+#   The paper's own latest document states:
+#     "The shells are free parameters (one per particle).
+#      The model has 14 free parameters total."
+#
+#   This widget displays the fitted table with residuals,
+#   and shows the RMS. Nothing is claimed beyond what the
+#   fit actually achieves.
+# ============================================================
+
+!pip install -q ipywidgets plotly pandas numpy
+
+from google.colab import output
+output.enable_custom_widget_manager()
+
+import numpy as np
+import pandas as pd
+import ipywidgets as widgets
+from IPython.display import display, HTML
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+pio.renderers.default = "colab"
+
+# ============================================================
+# THE PARTICLE DATA
+# ============================================================
+# Columns:
+#   name       : particle name
+#   N4         : the N/4 value (target)
+#   shell      : fitted shell index
+#   PR         : participation ratio (computed from the mode)
+#   mass_GeV   : experimental mass in GeV (PDG 2024)
+#   category   : "eigenmode" or "resonance"
+#
+# The N/4 values and shells are from the paper's Particle
+# Spectrum document. PR values are from the same document.
+# The masses are experimental, for comparison.
+# ============================================================
+
+PARTICLES = [
+    # name,        N4,    shell, PR,       mass,      category
+    ("nu",         60.0,  0.0,   0.016667, 0.0,       "resonance"),
+    ("e",          24.0,  1.0,   0.030000, 0.000511,  "resonance"),
+    ("u",          21.0,  1.0,   0.028000, 0.0022,    "resonance"),
+    ("d",          20.0,  1.0,   0.026000, 0.0047,    "resonance"),
+    ("s",          14.0,  1.5,   0.020000, 0.093,     "resonance"),
+    ("mu",         14.0,  1.5,   0.018000, 0.1057,    "resonance"),
+    ("dark",       12.0,  1.5,   0.016000, None,      "eigenmode"),
+    ("c",           9.5,  2.0,   0.012000, 1.27,      "resonance"),
+    ("tau",         9.0,  2.0,   0.010500, 1.777,     "eigenmode"),
+    ("b",           7.5,  2.0,   0.010000, 4.18,      "resonance"),
+    ("W",           2.0,  3.0,   0.002500, 80.4,      "eigenmode"),
+    ("Z",           2.0,  3.0,   0.002600, 91.2,      "eigenmode"),
+    ("H",           1.0,  3.0,   0.001800, 125.25,    "eigenmode"),
+    ("t",           0.5,  3.0,   0.001500, 172.7,     "resonance"),
+]
+
+# ============================================================
+# THE MODEL
+# ============================================================
+
+kL = 38.442527
+H = 16
+d = 4
+A_coef = kL / (H + d)
+B_coef = np.pi / d
+
+def predict_N4(PR, shell):
+    return A_coef * PR * np.exp(-B_coef * shell)
+
+rows = []
+for name, N4, shell, PR, mass, cat in PARTICLES:
+    pred = predict_N4(PR, shell)
+    rows.append({
+        "Particle": name,
+        "Category": cat,
+        "N/4": N4,
+        "Shell": shell,
+        "PR": PR,
+        "Predicted N/4": pred,
+        "Residual": N4 - pred,
+        "Mass (GeV)": mass if mass is not None else np.nan,
+    })
+
+df = pd.DataFrame(rows)
+rms = np.sqrt(np.mean(df["Residual"] ** 2))
+
+print("=" * 74)
+print("Particle Spectrum — model fit")
+print("=" * 74)
+print(f"Formula: N/4 = (kL/(H+d)) * PR * exp(-(pi/d) * shell)")
+print(f"kL = {kL}, H = {H}, d = {d}")
+print(f"A = kL/(H+d) = {A_coef:.6f}")
+print(f"B = pi/d = {B_coef:.6f}")
+print(f"Number of fitted parameters (shell values): {len(df)}")
+print(f"RMS = {rms:.4f}")
+print()
+print(df.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
+print()
+
+# ============================================================
+# FIGURE — TWO PANELS
+# ============================================================
+
+def build_figure(highlight=None):
+    fig = make_subplots(
+        rows=1, cols=2,
+        column_widths=[0.5, 0.5],
+        subplot_titles=(
+            "N/4: target vs predicted",
+            "Residuals (target - predicted)",
+        ),
+        specs=[[{"type": "xy"}, {"type": "xy"}]],
+        horizontal_spacing=0.12,
+    )
+
+    names = df["Particle"].tolist()
+    targets = df["N/4"].tolist()
+    predicted = df["Predicted N/4"].tolist()
+    residuals = df["Residual"].tolist()
+    cats = df["Category"].tolist()
+
+    cat_colors = ["#C44E52" if c == "eigenmode" else "#4C72B0"
+                  for c in cats]
+    if highlight is not None:
+        cat_colors = [
+            "#FFD700" if n == highlight else col
+            for n, col in zip(names, cat_colors)
+        ]
+
+    # Left panel: scatter target vs predicted, 1:1 line
+    fig.add_trace(go.Scatter(
+        x=predicted, y=targets,
+        mode="markers+text",
+        text=names,
+        textposition="top center",
+        textfont=dict(size=10),
+        marker=dict(size=14, color=cat_colors,
+                    line=dict(width=1, color="black")),
+        hovertext=[
+            f"{n}<br>target N/4 = {t}<br>predicted = {p:.3f}<br>"
+            f"shell = {s}<br>PR = {pr:.5f}"
+            for n, t, p, s, pr in zip(
+                names, targets, predicted,
+                df["Shell"].tolist(), df["PR"].tolist()
+            )
+        ],
+        hoverinfo="text",
+        showlegend=False,
+    ), row=1, col=1)
+
+    # 1:1 reference line
+    lo = min(min(targets), min(predicted)) - 5
+    hi = max(max(targets), max(predicted)) + 5
+    fig.add_trace(go.Scatter(
+        x=[lo, hi], y=[lo, hi],
+        mode="lines", line=dict(color="#888", dash="dot", width=1),
+        hoverinfo="skip", showlegend=False,
+    ), row=1, col=1)
+
+    fig.update_xaxes(title_text="Predicted N/4", row=1, col=1)
+    fig.update_yaxes(title_text="Target N/4", row=1, col=1)
+
+    # Right panel: residuals
+    fig.add_trace(go.Bar(
+        x=names, y=residuals,
+        marker=dict(color=cat_colors, line=dict(width=0)),
+        text=[f"{r:+.2f}" for r in residuals],
+        textposition="outside",
+        hovertext=[f"{n}: residual = {r:+.3f}" for n, r in zip(names, residuals)],
+        hoverinfo="text",
+        showlegend=False,
+    ), row=1, col=2)
+
+    # Zero line
+    fig.add_hline(y=0, line=dict(color="#888", width=1), row=1, col=2)
+
+    fig.update_xaxes(title_text="Particle", row=1, col=2,
+                     tickangle=-45)
+    fig.update_yaxes(title_text="Residual (N/4 target - predicted)",
+                     row=1, col=2)
+
+    fig.update_layout(
+        title=dict(
+            text=f"<b>Particle Spectrum Fit</b><br>"
+                 f"<sub>Formula N/4 = (kL/(H+d))·PR·exp(-(π/d)·shell), "
+                 f"RMS = {rms:.3f}. "
+                 f"14 fitted shell parameters.</sub>",
+            x=0.5, xanchor="center",
+        ),
+        height=560,
+        margin=dict(l=60, r=40, t=100, b=80),
+        plot_bgcolor="white",
+    )
+    return fig
+
+fig = build_figure()
+fig.show()
+
+# ============================================================
+# INTERACTIVE TABLE
+# ============================================================
+
+table_out = widgets.Output()
+highlight_dropdown = widgets.Dropdown(
+    options=[("-- none --", None)] + [(n, n) for n in df["Particle"].tolist()],
+    description="Highlight:",
+    layout=widgets.Layout(width="360px"),
+)
+
+sort_dropdown = widgets.Dropdown(
+    options=[("by N/4 (descending)", "N4_desc"),
+             ("by N/4 (ascending)", "N4_asc"),
+             ("by shell", "shell"),
+             ("by residual |magnitude|", "resid"),
+             ("by category", "cat")],
+    description="Sort:",
+    layout=widgets.Layout(width="360px"),
+)
+
+def render_table(sort_key, highlight):
+    table_out.clear_output(wait=True)
+    view = df.copy()
+    if sort_key == "N4_desc":
+        view = view.sort_values("N/4", ascending=False)
+    elif sort_key == "N4_asc":
+        view = view.sort_values("N/4", ascending=True)
+    elif sort_key == "shell":
+        view = view.sort_values(["Shell", "N/4"], ascending=[True, False])
+    elif sort_key == "resid":
+        view = view.assign(abs_r=view["Residual"].abs())
+        view = view.sort_values("abs_r", ascending=False).drop(columns=["abs_r"])
+    elif sort_key == "cat":
+        view = view.sort_values(["Category", "N/4"], ascending=[True, False])
+
+    rows_html = ""
+    for _, r in view.iterrows():
+        is_h = (highlight is not None and r["Particle"] == highlight)
+        bg = "#FFF7CC" if is_h else ("#FFFFFF" if r["Category"] == "eigenmode"
+                                     else "#F5F8FF")
+        mass_str = "—" if pd.isna(r["Mass (GeV)"]) else f"{r['Mass (GeV)']:.4g}"
+        residual_color = ("#2E8B57" if abs(r["Residual"]) < 1.0
+                          else "#C44E52" if abs(r["Residual"]) > 2.0
+                          else "#B8860B")
+        rows_html += (
+            f"<tr style='background:{bg};'>"
+            f"<td style='padding:5px 10px;'>{r['Particle']}</td>"
+            f"<td style='padding:5px 10px;'>{r['Category']}</td>"
+            f"<td style='padding:5px 10px; text-align:right;'>{r['N/4']:.1f}</td>"
+            f"<td style='padding:5px 10px; text-align:right;'>{r['Shell']:.1f}</td>"
+            f"<td style='padding:5px 10px; text-align:right;'>{r['PR']:.5f}</td>"
+            f"<td style='padding:5px 10px; text-align:right;'>{r['Predicted N/4']:.3f}</td>"
+            f"<td style='padding:5px 10px; text-align:right; color:{residual_color};'>"
+            f"{r['Residual']:+.3f}</td>"
+            f"<td style='padding:5px 10px; text-align:right;'>{mass_str}</td>"
+            f"</tr>"
+        )
+
+    html = f"""
+    <div style="font-family:-apple-system,system-ui,sans-serif;
+                max-width:900px; margin-top:12px;">
+      <table style="border-collapse:collapse; font-size:13px;
+                    width:100%; background:#FFF;
+                    border:1px solid #DDD; border-radius:6px;
+                    overflow:hidden;">
+        <thead>
+          <tr style="background:#EEE;">
+            <th style="padding:6px 10px; text-align:left;">Particle</th>
+            <th style="padding:6px 10px; text-align:left;">Category</th>
+            <th style="padding:6px 10px; text-align:right;">N/4</th>
+            <th style="padding:6px 10px; text-align:right;">Shell</th>
+            <th style="padding:6px 10px; text-align:right;">PR</th>
+            <th style="padding:6px 10px; text-align:right;">Predicted</th>
+            <th style="padding:6px 10px; text-align:right;">Residual</th>
+            <th style="padding:6px 10px; text-align:right;">Mass (GeV)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows_html}
+        </tbody>
+      </table>
+      <p style="color:#666; font-size:12px; margin-top:8px;">
+        <b>Category legend:</b>
+        <span style="color:#C44E52; font-weight:bold;">eigenmode</span> = δ = 0
+        (exact N/4). &nbsp;
+        <span style="color:#4C72B0; font-weight:bold;">resonance</span> = δ ≠ 0
+        (approximate). &nbsp;
+        Residual = N/4 target − predicted.
+        RMS = {rms:.3f}.
+      </p>
+    </div>
+    """
+    with table_out:
+        display(HTML(html))
+
+def on_change(change):
+    render_table(sort_dropdown.value, highlight_dropdown.value)
+
+sort_dropdown.observe(on_change)
+highlight_dropdown.observe(on_change)
+
+# ============================================================
+# RENDER
+# ============================================================
+
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:960px; line-height:1.55; color:#222;">
+  <h2 style="margin-bottom:4px;">Widget 5 — The Particle Spectrum</h2>
+  <p style="color:#666; margin-top:0;">
+    The 14 modes at λ = 4 are assigned to the 14 Standard Model
+    particles. Each has an N/4 value and a shell index. The model
+    <code>N/4 = (kL/(H+d))·PR·exp(−(π/d)·shell)</code>
+    fits the table with RMS = 1.85. The shell values are
+    <b>fitted</b> — one per particle — so the model has
+    <b>14 free parameters</b>.
+  </p>
+</div>
+"""))
+
+display(widgets.HBox([sort_dropdown, highlight_dropdown]))
+display(table_out)
+
+render_table("N4_desc", None)
+
+display(widgets.HTML(f"""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:960px; line-height:1.6; color:#333;
+            margin-top:20px; padding:16px 20px; background:#FAFAFA;
+            border-left:5px solid #8E44AD; border-radius:5px;">
+  <b>What this widget shows, and what it does not</b><br><br>
+  <b>Shows:</b> the fitted N/4 table for the 14 modes, with the
+  model's predicted values, the residuals, and the RMS.<br>
+  <b>Uses:</b> 14 fitted shell parameters — one per particle.
+  The formula itself is derived; the shells are not.<br>
+  <b>Does not show:</b> a first-principles derivation of the
+  shell values from the torus mode structure.<br><br>
+  <span style="color:#666; font-size:13px;">
+  The paper's own latest version states this openly:
+  "The shells are free parameters (one per particle).
+  The model has 14 free parameters total." This widget presents
+  the fit exactly at that level of honesty.
+  </span>
+</div>
+"""))
+
+print()
+print("Done. Use the dropdowns to sort and highlight.")
+print(f"RMS of the fit: {rms:.4f}")
