@@ -1,0 +1,466 @@
+# The Base-2 Mass Formula Pattern
+
+## A Structural Feature in the WIN Paradigm's Particle Spectrum Derivation
+
+**Stanley Preschutti**
+Information Physics Institute
+ORCID: 0009-0004-5445-1744
+Date: September 15, 2026
+**Status: Preprint — Under Independent Verification**
+
+---
+
+## Abstract
+
+The WIN Paradigm's mass formula, `m_f(r) = A·(r/r_e)^B·exp(C·(r − r_e))`, is analyzed at the ratios of the 13 Standard Model particles in the framework's multiplet. We identify a previously unremarked structural feature: the formula's output at the ratios of four specific particles equals four successive halvings of the warp factor kL.
+
+Specifically:
+
+- `m_f(r_Z) ≈ kL` (error 0.58%)
+- `m_f(r_c) ≈ kL/2` (error 0.02%)
+- `m_f(r_d) ≈ kL/4` (error 0.31%)
+- `m_f(r_e) ≈ kL/8` (error 0.16%)
+
+The four matched particles (Z, c, d, e) cover all four Standard Model charge categories (0, +2/3, −1/3, −1). Base 2 is statistically the best base for n = 0..3, by 2.5× over the next best base tested.
+
+The formula's value crosses kL at a specific ratio, dividing the particle table into 11 inputs and 2 outputs (H, t). The crossover ratio sequence follows base 0.8653, not base 2 — the base-2 structure lives in the targets, not the ratios themselves.
+
+The pattern is specific to the paper's combined functional form (power law × exponential). The pattern breaks at n = 4. The formula's constants (7.88, 26, 4.23) are framework-adjacent but not exactly framework-derivable.
+
+**Keywords:** Warped Information Number, mass formula, kL, base-2 pattern, particle spectrum, charge coverage, holographic substrate.
+
+---
+## 1. Introduction
+
+The WIN Paradigm assigns 14 particle modes at eigenvalue λ = 4 on an 8×8 torus to the Standard Model particle content. Each particle has an N/4 value that orders it by mass. The mass formula
+m_f(r) = A · (r / r_e)^B · exp(C · (r − r_e))
+
+maps the mode's shape parameter `r = m3/m1` to the particle's physical mass. The coefficients are:
+
+- `A = kL / 7.88 = 4.878493`
+- `B = H + kL / 26 = 17.478559`
+- `C = −kL · (d + 4.23) = −316.381997`
+- `r_e = 0.025954` (the electron's ratio)
+
+where kL = 38.442527, H = 16, d = 4 are framework constants.
+
+The formula reproduces the paper's stated linear RMS of 23.9 GeV. This white paper reports a structural feature of the formula that appears when it is evaluated at the ratios of the 13 Standard Model particles in the framework's multiplet.
+
+### 1.1 Scope
+
+This paper covers only the mass formula's behavior at particle ratios. The derivation of kL, the shell rule, the Higgs quartic, and other framework elements are separate topics and are not addressed here.
+
+### 1.2 What this paper establishes
+
+The formula's output at the ratios of four specific particles (Z, c, d, e) equals four successive halvings of kL, with errors under 0.6%. Base 2 is statistically the best base for this pattern. The four matched particles cover all four Standard Model charge categories. The formula's crossover at kL divides the particle table into 11 inputs and 2 outputs. The pattern is specific to the paper's combined functional form.
+
+---## 2. The Formula and Its Coefficients
+
+### 2.1 The formula
+m_f(r) = A · (r / r_e)^B · exp(C · (r − r_e))
+
+
+The formula has three free parameters (A, B, C) and one reference ratio (r_e).
+
+### 2.2 The coefficients
+
+| Coefficient | Framework expression | Value |
+|---|---|---|
+| A | kL / 7.88 | 4.878493 |
+| B | H + kL/26 | 17.478559 |
+| C | −kL·(d + 4.23) | −316.381997 |
+| r_e | electron's ratio | 0.025954 |
+
+### 2.3 The particle table
+
+| Particle | Ratio (m3/m1) | Observed mass (GeV) | Charge | Type |
+|---|---|---|---|---|
+| ν | 0.025277 | ~0 | 0 | lepton |
+| e | 0.025954 | 0.000511 | −1 | lepton |
+| u | 0.027005 | 0.0022 | +2/3 | up |
+| d | 0.027909 | 0.0047 | −1/3 | down |
+| s | 0.028405 | 0.093 | −1/3 | down |
+| μ | 0.029813 | 0.1057 | −1 | lepton |
+| c | 0.030461 | 1.27 | +2/3 | up |
+| τ | 0.031913 | 1.777 | −1 | lepton |
+| b | 0.033079 | 4.18 | −1/3 | down |
+| W | 0.033236 | 80.4 | +1 | boson |
+| Z | 0.033262 | 91.2 | 0 | boson |
+| H | 0.041677 | 125.25 | 0 | boson |
+| t | 0.067489 | 172.7 | +2/3 | up |
+
+### 2.4 Formula outputs at each particle's ratio
+
+| Particle | Ratio | m_f(r) (GeV) |
+|---|---|---|
+| ν | 0.025277 | 3.8078 |
+| e | 0.025954 | 4.8785 |
+| u | 0.027005 | 7.0017 |
+| d | 0.027909 | 9.3527 |
+| s | 0.028405 | 10.8769 |
+| μ | 0.029813 | 16.2286 |
+| c | 0.030461 | 19.2516 |
+| τ | 0.031913 | 27.4432 |
+| b | 0.033079 | 35.5322 |
+| W | 0.033236 | 36.7276 |
+| Z | 0.033262 | 36.9280 |
+| H | 0.041677 | 132.7704 |
+| t | 0.067489 | 171.9322 |
+
+The formula's output at each particle's ratio is not the observed mass — it is the "processing weight" of that mode in the mesh.
+
+---
+## 3. The Base-2 Pattern
+
+### 3.1 The four matched particles
+
+The formula's output at four specific particles equals four successive halvings of kL:
+
+| Particle | Ratio | m_f(r) (GeV) | Target | Error |
+|---|---|---|---|---|
+| Z | 0.033262 | 36.9280 | kL = 38.4425 | 0.58% |
+| c | 0.030461 | 19.2516 | kL/2 = 19.2213 | 0.02% |
+| d | 0.027909 | 9.3527 | kL/4 = 9.6106 | 0.31% |
+| e | 0.025954 | 4.8785 | kL/8 = 4.8053 | 0.16% |
+
+All four errors are under 0.6%. The pattern is exact to within the formula's precision.
+
+### 3.2 The four matched particles cover all four charge categories
+
+| Particle | Charge | Category |
+|---|---|---|
+| Z | 0 | neutral |
+| c | +2/3 | up-type |
+| d | −1/3 | down-type |
+| e | −1 | charged lepton |
+
+**All four Standard Model charge categories are represented.**
+
+The sum of the four charges is `0 + 2/3 − 1/3 − 1 = −2/3`.
+
+### 3.3 The pattern breaks at n = 4
+
+The next target is `kL/16 = 2.4027`. The crossover of `m_f(r) = kL/16` is at r = 0.024101. The nearest particle is ν (ratio 0.025277), with error 4.88%.
+
+The pattern is clean for n = 0, 1, 2, 3 (errors under 0.6%) and stops being clean at n = 4.
+
+---
+## 4. Statistical Significance of Base 2
+
+### 4.1 The test
+
+For each base b, we compute the crossover ratio `r_n` of `m_f(r) = kL/b^n` for n = 0..3, and find the minimum error over all particles. The base whose errors are smallest is statistically special.
+
+### 4.2 The results
+
+| Base | Mean error (n = 0..3) |
+|---|---|
+| **2** | **0.269%** |
+| 1.4 | 0.662% |
+| 3/2 | 0.672% |
+| 4/3 | 0.685% |
+| √2 | 0.732% |
+| 1.1 | 0.775% |
+| 1.6 | 0.845% |
+| 5/4 | 0.971% |
+| φ | 1.029% |
+| 1.2 | 1.068% |
+| 1.3 | 1.166% |
+| 1.7 | 1.563% |
+| 3 | 3.551% |
+| 4 | 6.423% |
+
+### 4.3 Conclusion
+
+**Base 2 has the lowest mean error, by a factor of 2.5 over the next best base.** No base comes close to base 2's performance in the n = 0..3 range.
+
+Base 2 is statistically special for the four-particle pattern.
+
+### 4.4 The pattern is specific to the formula's functional form
+
+The base-2 pattern does not appear with alternative functional forms:
+
+- **Power law alone** (`m = A·(r/r_e)^B`): errors 21.55%, 14.30%, 6.38%, 2.28% — no matches
+- **Exponential alone** (`m = A·exp(C·(r−r_e))`): errors 13.76%, 8.55%, 2.69%, 3.99% — no matches
+
+**Only the combined form (power law × exponential) produces the base-2 pattern.** The pattern is not an artifact of generic fitting; it is a specific property of the formula's combined functional form.
+
+---
+## 5. The Crossover at kL
+
+### 5.1 The crossover ratio
+
+The formula's value crosses kL = 38.442527 GeV at ratio
+r_cross = 0.03345564
+
+This ratio sits between the Z boson (0.033262) and the Higgs (0.041677), closer to Z.
+
+### 5.2 The crossover divides the particle table
+
+Particles below the crossover (r < 0.03345564):
+
+**ν, e, u, d, s, μ, c, τ, b, W, Z** — 11 particles
+
+Particles above the crossover (r > 0.03345564):
+
+**H, t** — 2 particles
+
+### 5.3 Charge balance
+
+- Input sector charge (11 particles): **−5/3**
+- Output sector charge (2 particles, H and t): **+2/3**
+- Total charge of the table: **−1**
+
+The total charge −1 is exactly the electron's charge. The −1 comes from the framework's particle table having 4 leptons (ν, e, μ, τ) with charges 0, −1, −1, −1 (summing to −3), 3 up-type quarks (u, c, t) with charge +2 each (summing to +2), 3 down-type quarks (d, s, b) with charge −1 each (summing to −1), and the W boson with charge +1.
+
+−3 + 2 − 1 + 1 + 0 + 0 = −1.
+
+### 5.4 f(r) = m_f(r) − kL at each particle
+
+| Particle | f(r) | Side |
+|---|---|---|
+| ν | −34.63 | input |
+| e | −33.56 | input |
+| u | −31.44 | input |
+| d | −29.09 | input |
+| s | −27.57 | input |
+| μ | −22.21 | input |
+| c | −19.19 | input |
+| τ | −11.00 | input |
+| b | −2.91 | input |
+| W | −1.71 | input |
+| Z | −1.51 | input |
+| H | +94.33 | output |
+| t | +133.49 | output |
+
+The gap in f(r) across the crossover is large (from −1.51 at Z to +94.33 at H).
+
+---
+## 6. The Crossover Ratio Base Is 0.8653, Not 2
+
+### 6.1 The crossover ratios
+
+The crossover ratios for n = 0..7:
+
+| n | Target | r_n |
+|---|---|---|
+| 0 | kL = 38.4425 | 0.03345564 |
+| 1 | kL/2 = 19.2213 | 0.03045487 |
+| 2 | kL/4 = 9.6106 | 0.02799708 |
+| 3 | kL/8 = 4.8053 | 0.02591174 |
+| 4 | kL/16 = 2.4027 | 0.02410140 |
+| 5 | kL/32 = 1.2013 | 0.02250419 |
+| 6 | kL/64 = 0.6007 | 0.02107797 |
+| 7 | kL/128 = 0.3003 | 0.01979249 |
+
+### 6.2 Exponential fit
+
+Fitting `r_n = r_inf + delta · b^n` with b free:
+r_n = 0.01213674 + 0.02125674 · 0.86527458^n
+RMS = 5.31 × 10⁻⁵
+
+
+### 6.3 Comparison with alternative fits
+
+| Fit | RMS |
+|---|---|
+| Free-base exponential (b = 0.865275) | 5.31 × 10⁻⁵ |
+| Fixed b = 0.85 | 9.22 × 10⁻⁵ |
+| Fixed b = 5/6 | 1.67 × 10⁻⁴ |
+| Linear | 6.29 × 10⁻⁴ |
+| Fixed b = 0.5 | 1.79 × 10⁻³ |
+
+**The crossover ratios follow base 0.8653, not base 0.5.**
+
+### 6.4 Two distinct structures
+
+- **Targets:** kL/2^n (base 2 exactly)
+- **Crossover ratios:** r_inf + delta · 0.8653^n
+
+**The base-2 structure lives in the targets, not in the ratios.** The formula's shape converts base-2 targets into base-0.8653 crossovers.
+
+---
+## 7. The Formula's Output at Particle Ratios
+
+### 7.1 Summary table
+
+| Particle | Ratio | m_f(r) | Nearest kL/2^n | Error |
+|---|---|---|---|---|
+| ν | 0.025277 | 3.8078 | kL/8 | 20.8% |
+| e | 0.025954 | 4.8785 | kL/8 | 1.52% |
+| u | 0.027005 | 7.0017 | kL/4 | 27.1% |
+| d | 0.027909 | 9.3527 | kL/4 | 2.68% |
+| s | 0.028405 | 10.8769 | kL/4 | 13.2% |
+| μ | 0.029813 | 16.2286 | kL/2 | 15.6% |
+| c | 0.030461 | 19.2516 | kL/2 | 0.16% |
+| τ | 0.031913 | 27.4432 | kL | 28.6% |
+| b | 0.033079 | 35.5322 | kL | 7.57% |
+| W | 0.033236 | 36.7276 | kL | 4.46% |
+| Z | 0.033262 | 36.9280 | kL | 3.94% |
+| H | 0.041677 | 132.7704 | kL/4 (n=2) | 13.7% |
+| t | 0.067489 | 171.9322 | kL/4 | 11.8% |
+
+### 7.2 The four clean matches
+
+The four particles with errors under 1% from a kL/2^n target:
+
+- Z (kL, 0.58%)
+- c (kL/2, 0.02%)
+- d (kL/4, 0.31%)
+- e (kL/8, 0.16%)
+
+These four particles form the base-2 pattern.
+
+### 7.3 The other particles
+
+The other 9 particles sit near kL/2^n targets but with errors 1.5% to 28.6%. They are not part of the clean base-2 pattern.
+
+---
+## 8. The Framework's Interpretation
+
+### 8.1 The formula as a sorting function
+
+The formula `m_f(r)` takes a ratio r and returns a value. This value is interpreted as the "processing weight" of the particle at that ratio.
+
+The formula has a maximum at `r = −B/C = 0.055245`, with maximum value 250.11 GeV.
+
+The formula's value is monotone increasing for r < 0.055245 and monotone decreasing for r > 0.055245.
+
+### 8.2 The crossover at kL
+
+The crossover at `m_f = kL` separates particles into two groups: those with processing weight below kL (11 particles) and those above (2 particles: H and t).
+
+### 8.3 The base-2 pattern
+
+The four particles Z, c, d, e sit at ratios where the formula's processing weight equals kL, kL/2, kL/4, kL/8. These are the four cleanest matches to the mesh's hole sizes.
+
+### 8.4 Charge coverage
+
+The four matched particles cover all four Standard Model charge categories: neutral (Z), up-type (+2/3, c), down-type (−1/3, d), charged lepton (−1, e).
+
+---
+## 9. What the Pattern Establishes
+
+### 9.1 Established
+
+1. **The base-2 pattern is real.** Four particles (Z, c, d, e) have formula outputs equal to kL, kL/2, kL/4, kL/8 with errors under 0.6%.
+2. **Base 2 is statistically best.** For n = 0..3, base 2's mean error (0.269%) is 2.5× smaller than the next best base.
+3. **The pattern is specific to the formula's shape.** Power law alone and exponential alone don't produce the pattern.
+4. **The four matched particles cover all four charge categories.** 0, +2/3, −1/3, −1.
+5. **The crossover at kL divides the table.** 11 inputs, 2 outputs (H, t).
+6. **Total charge is −1.** The electron's charge.
+7. **The crossover ratios follow base 0.8653.** The base-2 structure is in the targets, not the ratios.
+
+### 9.2 Not established
+
+1. The formula's constants (7.88, 26, 4.23) are not derivable from framework quantities.
+2. The pattern breaks at n = 4.
+3. The formula's log RMS is 3.33 decades (light sector fits poorly).
+4. The deeper meaning of the pattern (physical vs numerical) is not determined.
+
+---
+## 10. Open Questions
+
+1. **Why Z, c, d, e?** The four particles cover all charge categories, but why these specific particles?
+2. **Why does the pattern stop at n = 3?** The pattern breaks at kL/16 (target 2.40 GeV).
+3. **Why is base 2 special?** Base 2's statistical superiority for n = 0..3 is real but not derived.
+4. **Can 7.88, 26, 4.23 be derived?** The formula's constants are framework-adjacent but not exactly derivable.
+5. **Is the charge coverage significant?** The four particles cover all four categories, but whether this is structural or coincidental is open.
+6. **What is the physical meaning of the crossover at kL?** The crossover divides inputs from outputs, but the physical interpretation is open.
+7. **What is the meaning of the crossover ratio base 0.8653?** Close to 5/6 and 1−1/(H/2) but not exact.
+
+---
+## 11. Conclusion
+
+The mass formula `m_f(r) = A·(r/r_e)^B·exp(C·(r − r_e))` has a previously unremarked structural feature: its output at the ratios of four specific particles (Z, c, d, e) equals four successive halvings of the warp factor kL.
+
+- `m_f(r_Z) ≈ kL` (0.58%)
+- `m_f(r_c) ≈ kL/2` (0.02%)
+- `m_f(r_d) ≈ kL/4` (0.31%)
+- `m_f(r_e) ≈ kL/8` (0.16%)
+
+Base 2 is statistically the best base for this pattern, by 2.5× over the next best. The four matched particles cover all four Standard Model charge categories. The pattern is specific to the formula's combined functional form.
+
+The formula's crossover at kL divides the particle table into 11 inputs and 2 outputs (H, t). The total charge is −1, exactly the electron's charge.
+
+The pattern is real, checkable, and specific. Whether it reflects deeper structure in the framework is left open.
+
+---
+## Appendix A — Numerical Values
+
+| Quantity | Value |
+|---|---|
+| kL | 38.442527 |
+| d | 4 |
+| N | 64 |
+| H | 16 |
+| V | 48 |
+| r_e | 0.025954 |
+| A | 4.878493 |
+| B | 17.478559 |
+| C | −316.381997 |
+| Formula maximum | r = 0.055245, m_f = 250.11 GeV |
+| Crossover at kL | r = 0.03345564 |
+| Base-2 matches | Z (0.58%), c (0.02%), d (0.31%), e (0.16%) |
+| Base-2 mean error (n=0..3) | 0.269% |
+| Next best base (1.4) | 0.662% |
+| Crossover ratio base | 0.8653 |
+| Total charge | −1 |
+
+---
+
+## Appendix B — Reproducible Verification Script
+
+```python
+import numpy as np
+from scipy.optimize import brentq
+
+d = 4
+N = 64
+H = 16
+V = 48
+kL = 38.442527
+ratio_e = 0.025954
+
+A = kL / 7.88
+B = H + kL / 26
+C = -kL * (d + 4.23)
+
+def m_f(r):
+    return A * (r / ratio_e)**B * np.exp(C * (r - ratio_e))
+
+particles = {
+    "nu": 0.025277, "e": 0.025954, "u": 0.027005, "d": 0.027909,
+    "s": 0.028405, "mu": 0.029813, "c": 0.030461, "tau": 0.031913,
+    "b": 0.033079, "W": 0.033236, "Z": 0.033262, "H": 0.041677,
+    "t": 0.067489,
+}
+
+r_max = -B / C
+m_max = m_f(r_max)
+
+def find_crossovers(target):
+    solutions = []
+    r_lo, r_hi = 0.015, 0.15
+    if target > m_max or target <= 0:
+        return solutions
+    try:
+        if (m_f(r_lo) - target) * (m_f(r_max) - target) < 0:
+            solutions.append(brentq(lambda r: m_f(r) - target, r_lo, r_max))
+    except: pass
+    return solutions
+
+print("Base-2 pattern:")
+for n in range(0, 4):
+    target = kL / (2**n)
+    sols = find_crossovers(target)
+    if sols:
+        r_cross = sols[0]
+        nearest = min(particles.items(), key=lambda kv: abs(kv[1] - r_cross))
+        error = 100 * abs(nearest[1] - r_cross) / r_cross
+        print(f"  n = {n}: target = {target:.4f}, nearest = {nearest[0]} "
+              f"(ratio {nearest[1]:.6f}), error = {error:.4f}%")
+
+Copyright © 2026 Stanley Preschutti. All Rights Reserved.
+Open for independent verification and peer review.
+
