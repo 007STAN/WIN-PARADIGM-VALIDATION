@@ -1,0 +1,359 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 8: THE kL DERIVATION (FINAL)
+# ============================================================
+# Instructions:
+#   1. Paste this ENTIRE cell into a new Google Colab cell.
+#   2. Run it. The slider will work.
+# ============================================================
+
+!pip install -q ipywidgets plotly numpy pandas
+
+from google.colab import output
+output.enable_custom_widget_manager()
+
+import numpy as np
+import pandas as pd
+import ipywidgets as widgets
+from IPython.display import display, HTML
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+pio.renderers.default = "colab"
+
+# ============================================================
+# FRAMEWORK CONSTANTS
+# ============================================================
+
+kL_observed = 38.442488
+pi = np.pi
+
+def five_six(d):
+    N = d * 2**d
+    return (N - 2*d) / (2 * (d + 1))
+
+def five_four_four(d):
+    return five_six(d) - d / (d + 1)**2
+
+def kL_from_formula(d, sin2):
+    N = d * 2**d
+    return N * (d - 1) / (d + 1) + sin2 / five_four_four(d)
+
+def sin2_from_formula(d, kL):
+    return 3/8 - 0.165460 + kL / (5.6 * pi * 100)
+
+# ============================================================
+# STEP 1 — kL FROM d = 4
+# ============================================================
+
+d = 4
+N = d * 2**d
+H = 2**d
+V = (d - 1) * 2**d
+sin2_exp = 0.23122
+
+kL_derived = kL_from_formula(d, sin2_exp)
+
+print("=" * 74)
+print("Step 1 — kL from d = 4")
+print("=" * 74)
+print(f"N = {N}, H = {H}, V = {V}")
+print(f"5.6  = (N - 2d)/(2(d+1)) = {five_six(d):.6f}")
+print(f"5.44 = 5.6 - d/(d+1)^2   = {five_four_four(d):.6f}")
+print()
+print(f"sin^2 theta_W (experimental) = {sin2_exp}")
+print(f"kL = {N}*3/5 + {sin2_exp}/5.44")
+print(f"   = {N*3/5:.6f} + {sin2_exp/five_four_four(d):.6f}")
+print(f"   = {kL_derived:.6f}")
+print()
+print(f"kL (observed) = {kL_observed}")
+print(f"Relative error = {abs(kL_derived - kL_observed)/kL_observed:.2e}")
+print()
+
+# ============================================================
+# STEP 2 — ITERATION HISTORY
+# ============================================================
+
+MAX_ITER = 20
+kL_iter = 38.4
+sin2_iter = sin2_exp
+
+history = [{"iter": 0, "kL": kL_iter, "sin2": sin2_iter, "delta": None}]
+
+for i in range(1, MAX_ITER + 1):
+    kL_new = kL_from_formula(d, sin2_iter)
+    sin2_new = sin2_from_formula(d, kL_new)
+    delta = abs(kL_new - kL_iter)
+    history.append({
+        "iter": i,
+        "kL": kL_new,
+        "sin2": sin2_new,
+        "delta": delta,
+    })
+    kL_iter = kL_new
+    sin2_iter = sin2_new
+
+kL_fixed = kL_iter
+sin2_fixed = sin2_iter
+
+print("=" * 74)
+print("Step 2 — Self-consistency")
+print("=" * 74)
+print(f"{'iter':>5} {'kL':>18} {'sin^2 theta_W':>18} {'|delta|':>14}")
+print("-" * 74)
+for h in history:
+    delta_str = f"{h['delta']:.2e}" if h['delta'] is not None else "—"
+    print(f"{h['iter']:>5} {h['kL']:>18.10f} {h['sin2']:>18.10f} {delta_str:>14}")
+print()
+print(f"Fixed point: kL = {kL_fixed:.10f}")
+print()
+
+# ============================================================
+# STEP 3 — d-DEPENDENCE
+# ============================================================
+
+d_scan = []
+for dd in [2, 3, 4, 5, 6, 7]:
+    N_d = dd * 2**dd
+    kL_d = kL_from_formula(dd, sin2_exp)
+    err = abs(kL_d - kL_observed) / kL_observed
+    d_scan.append({"d": dd, "N": N_d, "kL": kL_d, "err": err})
+
+print("=" * 74)
+print("Step 3 — kL for different d")
+print("=" * 74)
+print(f"{'d':>3} {'N':>6} {'kL':>16} {'error':>20}")
+print("-" * 74)
+for r in d_scan:
+    marker = "  <-- d = 4" if r["d"] == 4 else ""
+    print(f"{r['d']:>3} {r['N']:>6} {r['kL']:>16.4f} {r['err']:>20.2e}{marker}")
+print()
+
+# ============================================================
+# INTERACTIVE DISPLAY (using ipywidgets.interactive_output)
+# ============================================================
+
+print("Building interactive widgets...")
+print()
+
+# Create the output widget FIRST, before the controls
+iter_output = widgets.Output()
+table_output = widgets.Output()
+
+# -- Iteration renderer --
+def render_iteration(i):
+    h = history[i]
+    delta_str = f"{h['delta']:.3e}" if h['delta'] is not None else "—"
+    converged = h['delta'] is not None and h['delta'] < 1e-10
+    badge = (
+        "<span style='background:#2E8B57; color:white; "
+        "padding:2px 8px; border-radius:4px; font-size:11px;'>"
+        "CONVERGED</span>"
+        if converged else
+        "<span style='background:#999; color:white; "
+        "padding:2px 8px; border-radius:4px; font-size:11px;'>"
+        "IN PROGRESS</span>"
+    )
+    html = f"""
+    <div style="font-family:-apple-system,system-ui,sans-serif;
+                border:1px solid #DDD; border-radius:8px;
+                padding:16px 22px; max-width:640px; background:#FFF;
+                box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+      <div style="font-size:12px; color:#999; margin-bottom:8px;">
+        Iteration <b>{h['iter']}</b> of {len(history)-1} &middot; {badge}
+      </div>
+      <div style="font-size:16px; line-height:1.9; color:#222;">
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:#666;">kL</span>
+          <b style="font-family:monospace;">{h['kL']:.10f}</b>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:#666;">sin²θ_W</span>
+          <b style="font-family:monospace;">{h['sin2']:.10f}</b>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:#666;">|ΔkL|</span>
+          <b style="font-family:monospace;">{delta_str}</b>
+        </div>
+      </div>
+    </div>
+    """
+    return html
+
+# -- Table renderer --
+def render_table_html():
+    rows = ""
+    for r in d_scan:
+        is_d4 = (r["d"] == 4)
+        bg = "#FFF7CC" if is_d4 else ("#FFF" if r["d"] % 2 == 0 else "#F8F8F8")
+        rows += (
+            f"<tr style='background:{bg};'>"
+            f"<td style='padding:6px 12px; text-align:center;'>"
+            f"<b>{r['d']}</b></td>"
+            f"<td style='padding:6px 12px; text-align:center;'>"
+            f"{r['N']}</td>"
+            f"<td style='padding:6px 12px; text-align:right; font-family:monospace;'>"
+            f"{r['kL']:.4f}</td>"
+            f"<td style='padding:6px 12px; text-align:right; font-family:monospace;'>"
+            f"{r['err']:.2e}</td>"
+            f"</tr>"
+        )
+    return f"""
+    <div style="font-family:-apple-system,system-ui,sans-serif;
+                max-width:820px; margin-top:8px;">
+      <table style="border-collapse:collapse; font-size:13px;
+                    width:100%; background:#FFF;
+                    border:1px solid #DDD; border-radius:6px;
+                    overflow:hidden;">
+        <thead>
+          <tr style="background:#EEE;">
+            <th style="padding:6px 12px; text-align:center;">d</th>
+            <th style="padding:6px 12px; text-align:center;">N</th>
+            <th style="padding:6px 12px; text-align:right;">kL</th>
+            <th style="padding:6px 12px; text-align:right;">error vs obs</th>
+          </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+      </table>
+      <p style="color:#666; font-size:12px; margin-top:8px;">
+        Only d = 4 gives kL ≈ 38.44. The formula is d-specific.
+      </p>
+    </div>
+    """
+
+# -- Figure --
+def build_figure():
+    fig = make_subplots(
+        rows=1, cols=3,
+        column_widths=[0.34, 0.33, 0.33],
+        subplot_titles=(
+            "kL self-consistency iteration",
+            "kL = leading + correction",
+            "kL for various d",
+        ),
+        specs=[[{"type": "xy"}, {"type": "xy"}, {"type": "xy"}]],
+        horizontal_spacing=0.10,
+    )
+
+    iters = [h["iter"] for h in history]
+    kLs = [h["kL"] for h in history]
+    fig.add_trace(go.Scatter(
+        x=iters, y=kLs,
+        mode="lines+markers",
+        line=dict(color="#4C72B0", width=2),
+        marker=dict(size=8),
+        hovertemplate="iter %{x}: kL=%{y:.10f}<extra></extra>",
+        showlegend=False,
+    ), row=1, col=1)
+    fig.add_hline(y=kL_observed, line=dict(color="#C44E52", dash="dash", width=1.5),
+                  row=1, col=1)
+    fig.update_xaxes(title_text="iteration", row=1, col=1)
+    fig.update_yaxes(title_text="kL", row=1, col=1)
+
+    leading = N * 3 / 5
+    correction = sin2_exp / five_four_four(d)
+    fig.add_trace(go.Bar(
+        x=["leading", "correction"],
+        y=[leading, correction],
+        marker=dict(color=["#4C72B0", "#DD8452"]),
+        text=[f"{leading:.4f}", f"{correction:.6f}"],
+        textposition="outside",
+        hovertemplate="%{x}: %{y:.6f}<extra></extra>",
+        showlegend=False,
+    ), row=1, col=2)
+    fig.add_hline(y=kL_observed, line=dict(color="#C44E52", dash="dash", width=1.5),
+                  row=1, col=2)
+    fig.update_yaxes(title_text="value", range=[0, 42], row=1, col=2)
+    fig.update_xaxes(showgrid=False, row=1, col=2)
+
+    ds_str = [str(r["d"]) for r in d_scan]
+    kLs_d = [r["kL"] for r in d_scan]
+    colors_d = ["#C44E52" if r["d"] == 4 else "#4C72B0" for r in d_scan]
+    fig.add_trace(go.Bar(
+        x=ds_str, y=kLs_d,
+        marker=dict(color=colors_d),
+        text=[f"{k:.2f}" for k in kLs_d],
+        textposition="outside",
+        hovertemplate="d=%{x}: kL=%{y:.4f}<extra></extra>",
+        showlegend=False,
+    ), row=1, col=3)
+    fig.add_hline(y=kL_observed, line=dict(color="#2E8B57", dash="dash", width=1.5),
+                  row=1, col=3)
+    fig.update_xaxes(title_text="d", showgrid=False, row=1, col=3)
+    fig.update_yaxes(title_text="kL", row=1, col=3)
+
+    fig.update_layout(
+        title=dict(
+            text="<b>Widget 8 — The kL Derivation</b><br>"
+                 "<sub>kL from d = 4 and the Weinberg angle</sub>",
+            x=0.5, xanchor="center",
+        ),
+        height=500,
+        margin=dict(l=60, r=40, t=100, b=60),
+        plot_bgcolor="white",
+    )
+    return fig
+
+# -- Create slider with linked output --
+slider = widgets.IntSlider(
+    value=0,
+    min=0,
+    max=len(history) - 1,
+    step=1,
+    description="Iteration:",
+    continuous_update=False,
+    layout=widgets.Layout(width="500px"),
+)
+
+# Use interactive_output — this is the RELIABLE way in Colab
+interactive_iter = widgets.interactive_output(
+    lambda i: display(HTML(render_iteration(i))),
+    {"i": slider}
+)
+
+# -- Build the display layout --
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:960px; line-height:1.55; color:#222;">
+  <h2 style="margin-bottom:4px;">Widget 8 — The kL Derivation</h2>
+  <p style="color:#666; margin-top:0;">
+    The warp factor <code>kL</code> is derived from <code>d = 4</code>
+    and the Weinberg angle:
+    <code>kL = N·(d−1)/(d+1) + sin²θ_W/5.44</code>.
+    Matches observed value to <b>0.0001%</b>.
+  </p>
+</div>
+"""))
+
+# Figure
+fig = build_figure()
+fig.show()
+
+# Slider with linked output
+display(widgets.HTML("<h3 style='font-family:sans-serif;'>Iteration walkthrough</h3>"))
+display(slider)
+display(interactive_iter)
+
+# Table
+display(widgets.HTML("<h3 style='font-family:sans-serif;'>d-dependence</h3>"))
+display(HTML(render_table_html()))
+
+# Footer
+display(widgets.HTML(f"""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:960px; line-height:1.65; color:#333;
+            margin-top:20px; padding:16px 20px; background:#FAFAFA;
+            border-left:5px solid #4C72B0; border-radius:5px;">
+  <b>Summary</b><br><br>
+  <b>kL (derived):</b> {kL_derived:.6f}<br>
+  <b>kL (observed):</b> {kL_observed}<br>
+  <b>Relative error:</b> {abs(kL_derived - kL_observed)/kL_observed:.2e}<br>
+  <b>Fixed point:</b> kL = {kL_fixed:.8f}<br>
+  <b>d-dependence:</b> only d = 4 gives kL ≈ 38.44<br><br>
+  <span style="color:#666; font-size:13px;">
+  Move the slider above to step through each iteration.
+  </span>
+</div>
+"""))
+
+print()
+print("Widget 8 complete. Move the slider to step through iterations.")
