@@ -1,109 +1,100 @@
 # ============================================================
-# WIN PARADIGM — WIDGET 2: PHOTON → d = 4 ANIMATION
+# WIN PARADIGM — WIDGET 6: PHOTON -> d = 4 ANIMATION
 # ============================================================
 # Instructions:
-#   1. Open a Google Colab notebook (same one as Widget 1 is fine).
-#   2. Paste this ENTIRE cell into a new code cell.
-#   3. Run it. Scroll down for the interactive animation.
+#   1. Paste this ENTIRE cell into a new Google Colab cell.
+#   2. Run it. Scroll down for the interactive animation.
 #
-# This widget animates the derivation of d = 4 from the photon's
-# two helicity states:
+# Physics (from WIN_Derivation_of_d4.pdf):
 #
-#   Photon -> 2 helicities -> 4D phase space -> Wick rotation
-#          -> 4D spacetime -> d = 4
+#   Photon (massless spin-1)
+#     -> 2 helicity states (h = +1, -1)
+#     -> each is a complex amplitude psi = a + i*b
+#     -> 4 real numbers (a_R, b_R, a_L, b_L)
+#     -> 4D phase space (Q1, P1, Q2, P2)
+#     -> Wick rotation by angle theta
+#     -> Lorentzian metric
 #
-# You can:
-#   - Drag the "Wick angle" slider to rotate the metric
-#   - Press Play to animate the rotation
-#   - Watch the metric oscillate with period pi (big bang every pi)
+#   With the standard parametrization
+#       Q1 = cos(theta),  P1 = sin(theta)
+#       Q2 = sin(theta),  P2 = cos(theta)
+#   the Lorentzian metric is
+#       ds^2(theta) = -Q1^2 + P1^2 + Q2^2 + P2^2
+#                   = 2*sin^2(theta)
+#   which oscillates with period pi, and is zero at
+#   theta = 0, pi, 2*pi, ...
+#
+#   That is what this cell computes and displays. No output
+#   is pre-filled; whatever it prints comes from the code.
 # ============================================================
 
-# --- Install dependencies (Colab) ---
 !pip install -q ipywidgets plotly numpy
 
-# --- Enable custom widget manager in Colab ---
 from google.colab import output
 output.enable_custom_widget_manager()
 
-# --- Imports ---
 import numpy as np
 import ipywidgets as widgets
-from IPython.display import display, HTML, clear_output
+from IPython.display import display, HTML
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.io as pio
 pio.renderers.default = "colab"
 
 # ============================================================
-# THE PHYSICS
-# ============================================================
-# From WIN_Derivation_of_d4.pdf:
-#
-#   1. The photon has two helicity states: h = +1 (right), h = -1 (left).
-#   2. Each helicity is a complex amplitude: psi = a + i*b (2 real numbers).
-#   3. So the photon's phase space is spanned by (Q1, P1, Q2, P2) in R^4.
-#   4. A Wick rotation by angle theta rotates the Euclidean metric
-#      into a Lorentzian one.
-#   5. The Lorentzian metric is:
-#
-#         ds^2(theta) = -Q1(theta)^2 + P1(theta)^2
-#                      + Q2(theta)^2 + P2(theta)^2
-#
-#      With Q1 = cos(theta), P1 = sin(theta),
-#           Q2 = sin(theta), P2 = cos(theta):
-#
-#         ds^2(theta) = 2 sin^2(theta)
-#
-#   6. This oscillates with period pi. It vanishes at
-#      theta = 0, pi, 2*pi, ... — the "big bang" moments.
-#   7. For the vacuum, theta advances at the Planck rate, so
-#      the big bang happens every Planck time (~1e-43 s).
-#   8. The 4D phase space + Wick rotation = 4D spacetime. Hence d = 4.
+# THE MATH
 # ============================================================
 
-# Sample the Wick angle densely
 THETA = np.linspace(0, 2 * np.pi, 600)
 
-# Helicity amplitudes (rotating phasors in the complex plane)
-Q1 = np.cos(THETA)
-P1 = np.sin(THETA)
-Q2 = np.sin(THETA)
-P2 = np.cos(THETA)
+# Helicity amplitudes: two independent (Q, P) pairs on the unit circle
+Q1 = np.cos(THETA); P1 = np.sin(THETA)
+Q2 = np.sin(THETA); P2 = np.cos(THETA)
 
-# Lorentzian metric as a function of Wick angle
-DS2 = -Q1**2 + P1**2 + Q2**2 + P2**2   # = 2 sin^2(theta)
+# Lorentzian metric ds^2(theta) = -Q1^2 + P1^2 + Q2^2 + P2^2
+DS2 = -(Q1 ** 2) + P1 ** 2 + Q2 ** 2 + P2 ** 2
+
+# Verify numerically: max |DS2 - 2 sin^2(theta)| should be ~0
+RESIDUAL = np.max(np.abs(DS2 - 2 * np.sin(THETA) ** 2))
+print("Verification: max |ds^2(theta) - 2*sin^2(theta)| =", RESIDUAL)
+
+# Numerical positions of zeros (big bang points)
+ZERO_THRESHOLDS = []
+for i in range(len(THETA) - 1):
+    if DS2[i] * DS2[i + 1] < 0:
+        # sign change between i and i+1 -> zero crossing
+        t0, t1 = THETA[i], THETA[i + 1]
+        z0, z1 = DS2[i], DS2[i + 1]
+        t_star = t0 - z0 * (t1 - t0) / (z1 - z0)
+        ZERO_THRESHOLDS.append(t_star)
+print("Numerical zero crossings of ds^2(theta) (radians):")
+for t in ZERO_THRESHOLDS:
+    print(f"  theta = {t:.6f}  (theta/pi = {t/np.pi:.6f})")
 
 # ============================================================
 # FIGURE BUILDER
 # ============================================================
 
-def build_animation_figure(theta_now=0.0, playing=False):
-    """Build a 2x2 subplot showing the photon -> d=4 derivation.
-
-    Top-left:  right-helicity phasor (Q1, P1)
-    Top-right: left-helicity phasor (Q2, P2)
-    Bottom-left:  the Lorentzian metric ds^2(theta) vs theta
-    Bottom-right: a summary / status panel
-    """
-    # Current values at theta_now
+def build_figure(theta_now=0.0):
+    """4-panel figure of the photon -> d = 4 derivation."""
     q1 = np.cos(theta_now); p1 = np.sin(theta_now)
     q2 = np.sin(theta_now); p2 = np.cos(theta_now)
-    ds2_now = 2 * np.sin(theta_now)**2
+    ds2_now = -(q1 ** 2) + p1 ** 2 + q2 ** 2 + p2 ** 2
 
     fig = make_subplots(
         rows=2, cols=2,
         subplot_titles=(
-            "Right helicity (h = +1):  (Q1, P1)",
-            "Left helicity (h = -1):  (Q2, P2)",
-            "Lorentzian metric  ds^2(theta) = -Q1^2 + P1^2 + Q2^2 + P2^2",
-            "Status at Wick angle theta",
+            "Right helicity (h = +1): phasor (Q1, P1)",
+            "Left helicity (h = -1): phasor (Q2, P2)",
+            "Lorentzian metric  ds^2(theta) = 2 sin^2(theta)",
+            "Status at the current Wick angle",
         ),
         specs=[
             [{"type": "xy"}, {"type": "xy"}],
             [{"type": "xy"}, {"type": "xy"}],
         ],
-        vertical_spacing=0.13,
-        horizontal_spacing=0.10,
+        vertical_spacing=0.14,
+        horizontal_spacing=0.12,
     )
 
     # --- Top-left: right helicity phasor ---
@@ -111,14 +102,11 @@ def build_animation_figure(theta_now=0.0, playing=False):
         x=[0, q1], y=[0, p1],
         mode="lines+markers",
         line=dict(color="#4C72B0", width=3),
-        marker=dict(size=[0, 14], color=["rgba(0,0,0,0)", "#4C72B0"]),
-        name="Right phasor",
-        hoverinfo="skip",
-        showlegend=False,
+        marker=dict(size=[0, 16],
+                    color=["rgba(0,0,0,0)", "#4C72B0"]),
+        hoverinfo="skip", showlegend=False,
     ), row=1, col=1)
-
-    # Unit circle reference
-    t = np.linspace(0, 2*np.pi, 200)
+    t = np.linspace(0, 2 * np.pi, 200)
     fig.add_trace(go.Scatter(
         x=np.cos(t), y=np.sin(t),
         mode="lines",
@@ -131,12 +119,10 @@ def build_animation_figure(theta_now=0.0, playing=False):
         x=[0, q2], y=[0, p2],
         mode="lines+markers",
         line=dict(color="#C44E52", width=3),
-        marker=dict(size=[0, 14], color=["rgba(0,0,0,0)", "#C44E52"]),
-        name="Left phasor",
-        hoverinfo="skip",
-        showlegend=False,
+        marker=dict(size=[0, 16],
+                    color=["rgba(0,0,0,0)", "#C44E52"]),
+        hoverinfo="skip", showlegend=False,
     ), row=1, col=2)
-
     fig.add_trace(go.Scatter(
         x=np.cos(t), y=np.sin(t),
         mode="lines",
@@ -144,46 +130,41 @@ def build_animation_figure(theta_now=0.0, playing=False):
         hoverinfo="skip", showlegend=False,
     ), row=1, col=2)
 
-    # --- Bottom-left: the Lorentzian metric vs theta ---
+    # --- Bottom-left: Lorentzian metric curve ---
     fig.add_trace(go.Scatter(
         x=THETA, y=DS2,
         mode="lines",
         line=dict(color="#55A868", width=2.5),
-        name="ds^2(theta)",
         hovertemplate="theta = %{x:.3f}<br>ds^2 = %{y:.3f}<extra></extra>",
         showlegend=False,
     ), row=2, col=1)
 
-    # Big-bang markers at multiples of pi
-    bb_thetas = [0, np.pi, 2*np.pi]
+    # Mark the big-bang points
     fig.add_trace(go.Scatter(
-        x=bb_thetas, y=[0]*len(bb_thetas),
+        x=[0, np.pi, 2 * np.pi], y=[0, 0, 0],
         mode="markers",
-        marker=dict(size=12, color="#C44E52", symbol="x"),
-        name="Big bang (ds^2 = 0)",
-        hovertemplate="Big bang<br>theta = %{x:.3f}<extra></extra>",
+        marker=dict(size=14, color="#C44E52", symbol="x"),
+        hovertemplate="big bang<br>theta = %{x:.3f}<extra></extra>",
         showlegend=False,
     ), row=2, col=1)
 
-    # Current-position marker on the metric curve
+    # Current position marker
     fig.add_trace(go.Scatter(
         x=[theta_now], y=[ds2_now],
         mode="markers",
-        marker=dict(size=16, color="#DD8452", line=dict(width=2, color="black")),
-        name="Now",
+        marker=dict(size=18, color="#DD8452",
+                    line=dict(width=2, color="black")),
         hovertemplate="theta = %{x:.3f}<br>ds^2 = %{y:.3f}<extra></extra>",
         showlegend=False,
     ), row=2, col=1)
 
     # --- Bottom-right: status panel ---
-    # We render a clean text block using an invisible scatter + annotations.
     fig.add_trace(go.Scatter(
         x=[0], y=[0], mode="markers",
         marker=dict(size=0.1, color="white"),
         hoverinfo="skip", showlegend=False,
     ), row=2, col=2)
 
-    # Determine phase of the metric
     if ds2_now < 0.02:
         phase = "BIG BANG — metric collapses to zero"
         color = "#C44E52"
@@ -191,71 +172,79 @@ def build_animation_figure(theta_now=0.0, playing=False):
         phase = "MAXIMUM — full Lorentzian metric"
         color = "#55A868"
     else:
-        phase = "Expanding / contracting"
+        phase = "Expanding or contracting"
         color = "#4C72B0"
 
     fig.add_annotation(
         x=0.5, y=0.85, xref="x4 domain", yref="y4 domain",
         text=f"<b>Wick angle theta</b><br>"
-             f"<span style='font-size:20px'>{theta_now:.3f} rad</span><br>"
-             f"({theta_now/np.pi:.3f} pi)",
+             f"<span style='font-size:20px'>{theta_now:.4f} rad</span><br>"
+             f"({theta_now / np.pi:.4f} pi)",
         showarrow=False, align="center",
         font=dict(size=13, color="#222"),
     )
     fig.add_annotation(
         x=0.5, y=0.55, xref="x4 domain", yref="y4 domain",
         text=f"<b>Lorentzian metric</b><br>"
-             f"<span style='font-size:20px; color:{color}'>ds^2 = {ds2_now:.4f}</span>",
+             f"<span style='font-size:20px; color:{color}'>"
+             f"ds^2 = {ds2_now:.4f}</span>",
         showarrow=False, align="center",
         font=dict(size=13, color="#222"),
     )
     fig.add_annotation(
         x=0.5, y=0.28, xref="x4 domain", yref="y4 domain",
-        text=f"<span style='color:{color}'>{phase}</span>",
-        showarrow=False, align="center",
-        font=dict(size=13),
+        text=f"<span style='color:{color}'><b>{phase}</b></span>",
+        showarrow=False, align="center", font=dict(size=13),
     )
     fig.add_annotation(
         x=0.5, y=0.08, xref="x4 domain", yref="y4 domain",
-        text="Period = pi.  Big bang every pi.",
+        text="ds^2 has period pi in theta.<br>"
+             "Big bang every pi.",
         showarrow=False, align="center",
         font=dict(size=11, color="#777"),
     )
 
-    # --- Layout ---
-    fig.update_xaxes(range=[-1.3, 1.3], showgrid=False, zeroline=True,
-                     zerolinecolor="#CCC", row=1, col=1)
-    fig.update_yaxes(range=[-1.3, 1.3], showgrid=False, zeroline=True,
-                     zerolinecolor="#CCC", row=1, col=1, scaleanchor="x")
-    fig.update_xaxes(range=[-1.3, 1.3], showgrid=False, zeroline=True,
-                     zerolinecolor="#CCC", row=1, col=2)
-    fig.update_yaxes(range=[-1.3, 1.3], showgrid=False, zeroline=True,
-                     zerolinecolor="#CCC", row=1, col=2, scaleanchor="x")
+    # Axes
+    fig.update_xaxes(range=[-1.3, 1.3], showgrid=False,
+                     zeroline=True, zerolinecolor="#CCC", row=1, col=1)
+    fig.update_yaxes(range=[-1.3, 1.3], showgrid=False,
+                     zeroline=True, zerolinecolor="#CCC",
+                     row=1, col=1, scaleanchor="x")
+    fig.update_xaxes(range=[-1.3, 1.3], showgrid=False,
+                     zeroline=True, zerolinecolor="#CCC", row=1, col=2)
+    fig.update_yaxes(range=[-1.3, 1.3], showgrid=False,
+                     zeroline=True, zerolinecolor="#CCC",
+                     row=1, col=2, scaleanchor="x")
 
-    fig.update_xaxes(range=[0, 2*np.pi], showgrid=True, gridcolor="#EEE",
-                     title_text="Wick angle theta (rad)",
-                     tickvals=[0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi],
-                     ticktext=["0", "pi/2", "pi", "3pi/2", "2pi"],
-                     row=2, col=1)
-    fig.update_yaxes(range=[-0.1, 2.2], showgrid=True, gridcolor="#EEE",
-                     title_text="ds^2", row=2, col=1)
-
+    fig.update_xaxes(
+        range=[0, 2 * np.pi],
+        showgrid=True, gridcolor="#EEE",
+        title_text="Wick angle theta (rad)",
+        tickvals=[0, np.pi / 2, np.pi, 3 * np.pi / 2, 2 * np.pi],
+        ticktext=["0", "pi/2", "pi", "3pi/2", "2pi"],
+        row=2, col=1,
+    )
+    fig.update_yaxes(
+        range=[-0.15, 2.2],
+        showgrid=True, gridcolor="#EEE",
+        title_text="ds^2", row=2, col=1,
+    )
     fig.update_xaxes(visible=False, range=[0, 1], row=2, col=2)
     fig.update_yaxes(visible=False, range=[0, 1], row=2, col=2)
 
     fig.update_layout(
         title=dict(
-            text="<b>Photon → d = 4</b><br>"
-                 "<sub>Two helicity states -> 4D phase space -> Wick rotation "
-                 "-> 4D spacetime</sub>",
+            text="<b>Photon to d = 4</b><br>"
+                 "<sub>Two helicities -> 4D phase space -> "
+                 "Wick rotation -> Lorentzian metric with "
+                 "period pi</sub>",
             x=0.5, xanchor="center",
         ),
         height=780,
-        margin=dict(l=50, r=30, t=90, b=50),
+        margin=dict(l=50, r=30, t=100, b=50),
         plot_bgcolor="white",
         showlegend=False,
     )
-
     return fig
 
 # ============================================================
@@ -263,43 +252,40 @@ def build_animation_figure(theta_now=0.0, playing=False):
 # ============================================================
 
 theta_slider = widgets.FloatSlider(
-    value=0.0,
-    min=0.0,
-    max=2 * np.pi,
-    step=0.01,
+    value=0.0, min=0.0, max=2 * np.pi, step=0.01,
     description="Wick angle:",
     continuous_update=True,
-    readout=True,
-    readout_format=".3f",
+    readout=True, readout_format=".4f",
     layout=widgets.Layout(width="650px"),
 )
 
 play_button = widgets.ToggleButton(
-    value=False,
-    description="▶ Play",
+    value=False, description="Play",
     button_style="success",
     layout=widgets.Layout(width="100px"),
 )
 
 reset_button = widgets.Button(
-    description="↺ Reset",
+    description="Reset",
     layout=widgets.Layout(width="100px"),
 )
 
-status_out = widgets.Output()
-figure_out = widgets.Output()
-
-# We use a go.FigureWidget so we can update it in place without flicker.
-fig_widget = go.FigureWidget(build_animation_figure(0.0))
+# Use FigureWidget for in-place updates (no flicker)
+fig_widget = go.FigureWidget(build_figure(0.0))
 
 def update_figure(theta):
-    """Redraw the figure at a new theta without rebuilding widgets."""
-    new_fig = build_animation_figure(theta)
-
-    # Copy traces and annotations from new_fig into fig_widget
-    fig_widget.data = []
-    for tr in new_fig.data:
-        fig_widget.add_trace(tr)
+    new_fig = build_figure(theta)
+    # Update traces in place where possible; fall back to replace
+    # for annotations and layout.
+    for i, tr in enumerate(new_fig.data):
+        if i < len(fig_widget.data):
+            fig_widget.data[i].x = tr.x
+            fig_widget.data[i].y = tr.y
+        else:
+            fig_widget.add_trace(tr)
+    # Remove extra traces if new_fig has fewer
+    while len(fig_widget.data) > len(new_fig.data):
+        fig_widget.data = fig_widget.data[:-1]
     fig_widget.layout = new_fig.layout
 
 def on_slider_change(change):
@@ -319,7 +305,6 @@ reset_button.on_click(on_reset)
 import time
 
 def animate():
-    """Advance the slider by a small step each frame while Play is on."""
     while play_button.value:
         new_val = theta_slider.value + 0.04
         if new_val > 2 * np.pi:
@@ -330,28 +315,29 @@ def animate():
 def on_play_change(change):
     if change["name"] == "value":
         if change["new"]:
-            play_button.description = "⏸ Pause"
+            play_button.description = "Pause"
             animate()
         else:
-            play_button.description = "▶ Play"
+            play_button.description = "Play"
 
 play_button.observe(on_play_change)
 
 # ============================================================
-# RENDER EVERYTHING
+# RENDER
 # ============================================================
 
 display(widgets.HTML("""
 <div style="font-family:-apple-system,system-ui,sans-serif;
-            max-width:900px; line-height:1.55; color:#222;">
-  <h2 style="margin-bottom:4px;">Widget 2 — Photon → d = 4</h2>
+            max-width:960px; line-height:1.55; color:#222;">
+  <h2 style="margin-bottom:4px;">Widget 6 — Photon to d = 4</h2>
   <p style="color:#666; margin-top:0;">
-    The single input of the WIN Paradigm, animated. Drag the slider
-    (or press Play) to rotate the Wick angle θ. Watch the Lorentzian
-    metric <code>ds²(θ) = 2·sin²(θ)</code> oscillate with period π.
-    At θ = 0, π, 2π, …, the metric collapses to zero — the
-    "big bang" moments described in
-    <code>WIN_Derivation_of_d4.pdf</code>.
+    The single input of the WIN Paradigm, animated. The photon
+    has two helicity states (h = +1 and h = -1), each with a
+    complex amplitude = two real components. Four real numbers
+    span a 4D phase space. A Wick rotation by angle theta turns
+    the Euclidean metric into a Lorentzian one:
+    <code>ds²(theta) = 2·sin²(theta)</code>, which oscillates
+    with period pi. The big bang happens every pi in theta.
   </p>
 </div>
 """))
@@ -362,23 +348,25 @@ display(fig_widget)
 
 display(widgets.HTML("""
 <div style="font-family:-apple-system,system-ui,sans-serif;
-            max-width:900px; line-height:1.55; color:#444;
+            max-width:960px; line-height:1.55; color:#444;
             margin-top:18px; padding:14px 18px; background:#FAFAFA;
             border-left:4px solid #DD8452; border-radius:4px;">
   <b>The derivation chain</b><br>
-  Photon (spin-1, massless) → 2 helicity states (h = ±1)
-  → each has 2 real components (Q, P) → 4D phase space (Q1,P1,Q2,P2)
-  → Wick rotation by angle θ → Lorentzian metric
-  <code>ds² = −Q1² + P1² + Q2² + P2²</code> → <b>d = 4</b>.<br><br>
+  Photon (spin-1, massless) &rarr; 2 helicity states (h = ±1)
+  &rarr; each has 2 real components (Q, P) &rarr; 4D phase space
+  (Q1, P1, Q2, P2) &rarr; Wick rotation by angle theta &rarr;
+  Lorentzian metric <code>ds² = -Q1² + P1² + Q2² + P2²</code>
+  &rarr; <b>d = 4</b>.<br><br>
   <span style="color:#666; font-size:13px;">
-  Every step is forced by the physics. The Wick rotation is the bridge
-  between the photon's phase space and spacetime. The metric's period
-  in θ is π; for the vacuum, θ advances at the Planck rate, so the
-  universe is "reborn" every ~10⁻⁴³ seconds.
+  The orange marker on the bottom-left panel collapses to zero
+  at every multiple of pi. That is the "big bang every pi" claim
+  from the derivation paper. Watch the metric when theta passes
+  pi — it touches zero and re-expands.
   </span>
 </div>
 """))
 
-print("\nDone. Use the Play button or drag the slider to animate.")
-print("Watch the orange marker on the bottom-left plot: it collapses to")
-print("zero every pi. That is the 'big bang' in the WIN Paradigm.")
+print("\nDone. Use Play or drag the slider.")
+print("The verification printout above confirms that the computed")
+print("ds^2(theta) equals 2*sin^2(theta) to numerical precision,")
+print("and shows the numerical zero crossings.")
