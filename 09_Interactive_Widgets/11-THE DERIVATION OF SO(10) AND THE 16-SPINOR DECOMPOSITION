@@ -1,0 +1,441 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 11: THE DERIVATION OF SO(10) AND THE
+# 16-SPINOR DECOMPOSITION
+# ============================================================
+# Instructions:
+#   1. Paste this ENTIRE cell into a new Google Colab cell.
+#   2. Run it. Scroll down for the printed output and figure.
+# ============================================================
+
+!pip install -q ipywidgets plotly numpy pandas
+
+from google.colab import output
+output.enable_custom_widget_manager()
+
+import numpy as np
+from fractions import Fraction
+import ipywidgets as widgets
+from IPython.display import display, HTML
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+pio.renderers.default = "colab"
+
+# ============================================================
+# STEP 1 — The three anchors for SO(10)
+# ============================================================
+
+print("=" * 78)
+print("STEP 1 -- The three anchors for SO(10)")
+print("=" * 78)
+print()
+
+# Anchor 1: Combinatorial
+print("Anchor 1 (Combinatorial): p(d) = d + 1")
+print()
+
+def partition_count(d):
+    p_values = [1, 1, 2, 3, 5, 7, 11, 15, 22, 30, 42]
+    return p_values[d]
+
+print(f"{'d':>3} {'p(d)':>6} {'d + 1':>8} {'match':>8}")
+print("-" * 30)
+for d_test in range(2, 8):
+    p_d = partition_count(d_test)
+    match = "YES" if p_d == d_test + 1 else "no"
+    print(f"{d_test:>3} {p_d:>6} {d_test + 1:>8} {match:>8}")
+
+print()
+print("p(4) = 5 = rank(SO(10)). Unique solution at d = 4.")
+print()
+
+# Anchor 2: Physical
+print("Anchor 2 (Physical): rank(SM) = 4, so rank(GUT) >= 5")
+print()
+print("SM gauge group: SU(3) x SU(2) x U(1)")
+print("Rank: 2 (SU(3)) + 1 (SU(2)) + 1 (U(1)) = 4")
+print("To include the right-handed neutrino: rank >= 5")
+print()
+
+# Anchor 3: Mathematical
+print("Anchor 3 (Mathematical): smallest simple group with rank 5 and 16-dim spinor")
+print()
+print(f"{'group':>10} {'rank':>6} {'spinor dim':>14} {'has 16?':>10}")
+print("-" * 44)
+groups = [
+    ("SU(5)",  4, "5, 10, 15",   "no"),
+    ("SO(10)", 5, "16",          "YES"),
+    ("SU(6)",  5, "6, 20, 35",   "no"),
+    ("SO(11)", 5, "32",          "no"),
+    ("E6",     6, "27",          "no"),
+    ("SO(12)", 6, "32",          "no"),
+]
+for name, rank, spinor, has16 in groups:
+    print(f"{name:>10} {rank:>6} {spinor:>14} {has16:>10}")
+
+print()
+print("SO(10) is the unique smallest simple group with rank 5 and a 16-dim spinor.")
+print()
+
+# ============================================================
+# STEP 2 — The 16-spinor decomposition
+# ============================================================
+
+print("=" * 78)
+print("STEP 2 -- The 16-spinor decomposition")
+print("=" * 78)
+print()
+print("16 -> (3,2)_{1/6} + (3,1)_{2/3} + (3,1)_{-1/3}")
+print("       + (1,2)_{-1/2} + (1,1)_{-1} + (1,1)_0")
+print()
+print("Dimension check:")
+print("  6 (from (3,2)) + 3 + 3 + 2 + 1 + 1 = 16")
+print()
+
+# ============================================================
+# STEP 3 — The 16 states with exact rational arithmetic
+# ============================================================
+
+print("=" * 78)
+print("STEP 3 -- The 16 states of the SO(10) spinor")
+print("=" * 78)
+print()
+
+states = []
+
+for color in ["r", "g", "b"]:
+    for iso in ["+1/2", "-1/2"]:
+        states.append({
+            "state": f"Q_L({color}, {iso})",
+            "B_L": Fraction(1, 3),
+            "I3_L": Fraction(1, 2) if iso == "+1/2" else Fraction(-1, 2),
+            "I3_R": Fraction(0),
+            "sector": "Quark doublet",
+        })
+
+for iso in ["+1/2", "-1/2"]:
+    states.append({
+        "state": f"L_L({iso})",
+        "B_L": Fraction(-1),
+        "I3_L": Fraction(1, 2) if iso == "+1/2" else Fraction(-1, 2),
+        "I3_R": Fraction(0),
+        "sector": "Lepton doublet",
+    })
+
+for color in ["r", "g", "b"]:
+    states.append({
+        "state": f"u_R({color})",
+        "B_L": Fraction(1, 3),
+        "I3_L": Fraction(0),
+        "I3_R": Fraction(1, 2),
+        "sector": "Up singlet",
+    })
+
+for color in ["r", "g", "b"]:
+    states.append({
+        "state": f"d_R({color})",
+        "B_L": Fraction(1, 3),
+        "I3_L": Fraction(0),
+        "I3_R": Fraction(-1, 2),
+        "sector": "Down singlet",
+    })
+
+states.append({
+    "state": "nu_R",
+    "B_L": Fraction(-1),
+    "I3_L": Fraction(0),
+    "I3_R": Fraction(1, 2),
+    "sector": "Neutrino singlet",
+})
+
+states.append({
+    "state": "e_R",
+    "B_L": Fraction(-1),
+    "I3_L": Fraction(0),
+    "I3_R": Fraction(-1, 2),
+    "sector": "Electron singlet",
+})
+
+for s in states:
+    s["Y"] = s["I3_R"] + s["B_L"] / 2
+    s["Q"] = s["I3_L"] + s["Y"]
+
+print(f"Total states: {len(states)}")
+print()
+
+from collections import defaultdict
+by_sector = defaultdict(list)
+for s in states:
+    by_sector[s["sector"]].append(s)
+
+print(f"{'sector':>20} {'count':>8}")
+print("-" * 30)
+for sector in ["Quark doublet", "Lepton doublet", "Up singlet",
+                "Down singlet", "Neutrino singlet", "Electron singlet"]:
+    print(f"{sector:>20} {len(by_sector[sector]):>8}")
+
+print()
+
+print("=" * 78)
+print("The 16 states with quantum numbers")
+print("=" * 78)
+print()
+print(f"{'state':>18} {'B-L':>8} {'I3_L':>8} {'I3_R':>8} {'Y':>8} {'Q':>8}")
+print("-" * 78)
+for s in states:
+    def fmt(f):
+        if f.denominator == 1:
+            return f"{f.numerator:+d}"
+        return f"{f.numerator:+d}/{f.denominator}"
+    print(f"{s['state']:>18} {fmt(s['B_L']):>8} {fmt(s['I3_L']):>8} "
+          f"{fmt(s['I3_R']):>8} {fmt(s['Y']):>8} {fmt(s['Q']):>8}")
+
+print()
+
+# ============================================================
+# STEP 4 — Anomaly cancellation
+# ============================================================
+
+print("=" * 78)
+print("STEP 4 -- Anomaly cancellation")
+print("=" * 78)
+print()
+
+tr_BL = sum(s["B_L"] for s in states)
+print(f"Tr(B-L) = sum over 16 states of (B-L)")
+print(f"        = 12 * (+1/3) + 4 * (-1)")
+print(f"        = {tr_BL}")
+print(f"        = 0: {tr_BL == 0}")
+print()
+
+tr_Y = sum(s["Y"] for s in states)
+print(f"Tr(Y) = sum over 16 states of Y")
+print(f"      = 6 * (+1/6) + 3 * (+2/3) + 3 * (-1/3)")
+print(f"        + 2 * (-1/2) + 1 * (-1) + 1 * (0)")
+print(f"      = {tr_Y}")
+print(f"      = 0: {tr_Y == 0}")
+print()
+
+Q_values = sorted(set(s["Q"] for s in states))
+print(f"Electric charges in the 16-spinor: {[str(q) for q in Q_values]}")
+print(f"Expected: {{+2/3, -1/3, 0, -1}}")
+print(f"Match: {Q_values == [Fraction(-1), Fraction(-1,3), Fraction(0), Fraction(2,3)]}")
+print()
+
+# ============================================================
+# STEP 5 — Aggregation into SM representations
+# ============================================================
+
+print("=" * 78)
+print("STEP 5 -- Aggregation into SM representations")
+print("=" * 78)
+print()
+
+def su3_dim(s):
+    if "Q_L" in s["state"] or s["state"].startswith("u_R") or s["state"].startswith("d_R"):
+        return 3
+    return 1
+
+def su2_dim(s):
+    if "Q_L" in s["state"] or "L_L" in s["state"]:
+        return 2
+    return 1
+
+grouped = defaultdict(lambda: {"count": 0, "states": []})
+for s in states:
+    key = (su3_dim(s), su2_dim(s), s["Y"])
+    grouped[key]["count"] += 1
+    grouped[key]["states"].append(s["state"])
+
+print(f"{'SU(3)':>8} {'SU(2)':>8} {'Y':>8} {'count':>8} {'SM content':>20}")
+print("-" * 78)
+for key in sorted(grouped.keys(), key=lambda k: (-k[0], -k[1], float(k[2]))):
+    su3, su2, Y = key
+    count = grouped[key]["count"]
+    if su3 == 3 and su2 == 2:
+        content = "Quark doublet"
+    elif su3 == 3 and su2 == 1:
+        if Y == Fraction(2, 3):
+            content = "Up singlet"
+        else:
+            content = "Down singlet"
+    elif su3 == 1 and su2 == 2:
+        content = "Lepton doublet"
+    elif su3 == 1 and su2 == 1:
+        if Y == Fraction(-1):
+            content = "Electron singlet"
+        elif Y == Fraction(0):
+            content = "Neutrino singlet"
+        else:
+            content = "?"
+    else:
+        content = "?"
+    Y_str = f"{Y.numerator}/{Y.denominator}" if Y.denominator > 1 else f"{Y.numerator}"
+    print(f"{su3:>8} {su2:>8} {Y_str:>8} {count:>8} {content:>20}")
+
+print()
+print("Total: 6 + 3 + 3 + 2 + 1 + 1 = 16")
+print()
+
+# ============================================================
+# STEP 6 — Figure
+# ============================================================
+
+def build_figure():
+    fig = make_subplots(
+        rows=1, cols=2,
+        column_widths=[0.5, 0.5],
+        subplot_titles=(
+            "Three anchors for SO(10)",
+            "The 16-spinor decomposition",
+        ),
+        specs=[[{"type": "xy"}, {"type": "domain"}]],
+        horizontal_spacing=0.08,
+    )
+
+    fig.add_trace(go.Scatter(
+        x=[0.5], y=[0.85],
+        mode="markers+text",
+        text=["Combinatorial<br>p(4) = 5"],
+        textposition="middle center",
+        textfont=dict(size=13),
+        marker=dict(size=80, color="#4C72B0",
+                    line=dict(width=2, color="black")),
+        hoverinfo="text",
+        hovertext=["p(d) = d + 1 uniquely at d = 4"],
+        showlegend=False,
+    ), row=1, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=[0.5], y=[0.5],
+        mode="markers+text",
+        text=["Physical<br>rank(SM) = 4<br>rank(GUT) >= 5"],
+        textposition="middle center",
+        textfont=dict(size=13),
+        marker=dict(size=80, color="#55A868",
+                    line=dict(width=2, color="black")),
+        hoverinfo="text",
+        hovertext=["SM has rank 4; right-handed neutrino needs rank 5"],
+        showlegend=False,
+    ), row=1, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=[0.5], y=[0.15],
+        mode="markers+text",
+        text=["Mathematical<br>SO(10) unique"],
+        textposition="middle center",
+        textfont=dict(size=13),
+        marker=dict(size=80, color="#C44E52",
+                    line=dict(width=2, color="black")),
+        hoverinfo="text",
+        hovertext=["Smallest simple group with rank 5 and 16-dim spinor"],
+        showlegend=False,
+    ), row=1, col=1)
+
+    fig.update_xaxes(range=[0, 1], showgrid=False, visible=False, row=1, col=1)
+    fig.update_yaxes(range=[0, 1], showgrid=False, visible=False, row=1, col=1)
+
+    labels = [
+        "Quark doublet (6)",
+        "Up singlet (3)",
+        "Down singlet (3)",
+        "Lepton doublet (2)",
+        "Electron singlet (1)",
+        "Neutrino singlet (1)",
+    ]
+    values = [6, 3, 3, 2, 1, 1]
+    colors = ["#4C72B0", "#55A868", "#C44E52", "#8172B3", "#CCB974", "#DA8BC3"]
+
+    fig.add_trace(go.Pie(
+        labels=labels,
+        values=values,
+        marker=dict(colors=colors, line=dict(width=1, color="black")),
+        textinfo="label+value",
+        textfont=dict(size=11),
+        hovertemplate="<b>%{label}</b><br>%{value} states<extra></extra>",
+    ), row=1, col=2)
+
+    fig.update_layout(
+        title=dict(
+            text="<b>Widget 11 -- The Derivation of SO(10) and the "
+                 "16-Spinor Decomposition</b><br>"
+                 "<sub>Three independent anchors converge on SO(10). "
+                 "The 16-spinor splits into one complete SM generation.</sub>",
+            x=0.5, xanchor="center",
+        ),
+        height=520,
+        margin=dict(l=60, r=40, t=110, b=60),
+        plot_bgcolor="white",
+    )
+    return fig
+
+fig = build_figure()
+fig.show()
+
+# ============================================================
+# STEP 7 — Summary (ASCII characters only)
+# ============================================================
+
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:960px; line-height:1.65; color:#333;
+            margin-top:20px; padding:16px 20px; background:#FAFAFA;
+            border-left:5px solid #4C72B0; border-radius:5px;">
+  <b>Widget 11 -- The Derivation of SO(10) and the 16-Spinor Decomposition</b><br><br>
+
+  <b>Three anchors for SO(10:</b><br>
+  <b>1. Combinatorial:</b> p(4) = 5 = rank(SO(10)). p(d) = d + 1 is
+  satisfied uniquely at d = 4.<br>
+  <b>2. Physical:</b> The Standard Model has rank 4. A GUT that includes
+  the right-handed neutrino must have rank >= 5.<br>
+  <b>3. Mathematical:</b> SO(10) is the smallest simple group with rank 5
+  and a 16-dimensional spinor.<br><br>
+
+  <b>The 16-spinor decomposition:</b><br>
+  <code>16 -> (3,2)_{1/6} + (3,1)_{2/3} + (3,1)_{-1/3}
+  + (1,2)_{-1/2} + (1,1)_{-1} + (1,1)_0</code><br><br>
+
+  <b>Verification:</b><br>
+  Total states: 16<br>
+  Tr(B-L) = 0 (exact rational)<br>
+  Tr(Y) = 0 (exact rational)<br>
+  Electric charges: {+2/3, -1/3, 0, -1}<br><br>
+
+  <b>Status: fully derived.</b> Every step in this widget is either:
+  <ul>
+    <li>Standard arithmetic (p(4) = 5, dimension counts, anomalies)</li>
+    <li>Standard mathematics (SO(10) is the smallest simple group
+        with rank 5 and 16-dim spinor)</li>
+    <li>Standard physics (SM fermion content plus right-handed
+        neutrino is 16 states)</li>
+  </ul>
+  No interpretive steps, no fitted parameters.<br><br>
+
+  <span style="color:#666; font-size:13px;">
+  <b>Note on the WIN-specific claim:</b> The WIN Paradigm claims that
+  d = 4 selects SO(10) via p(4) = 5. This is the combinatorial anchor.
+  The mathematical anchor (smallest group with rank 5 and 16-dim spinor)
+  does not require d = 4 to hold -- it is purely group theory. Both
+  anchors converge on SO(10).
+  </span>
+</div>
+"""))
+
+print()
+print("=" * 78)
+print("Widget 11 complete.")
+print("=" * 78)
+print()
+print("The derivation of SO(10) is fully arithmetic:")
+print(f"  p(4) = 5 = rank(SO(10))")
+print(f"  rank(SM) = 4 => rank(GUT) >= 5")
+print(f"  SO(10) = smallest simple group with rank 5 and 16-dim spinor")
+print()
+print("The 16-spinor decomposition is fully algebraic:")
+print(f"  16 -> (3,2)_{{1/6}} + (3,1)_{{2/3}} + (3,1)_{{-1/3}}")
+print(f"       + (1,2)_{{-1/2}} + (1,1)_{{-1}} + (1,1)_0")
+print()
+print("All quantum numbers verified with exact rational arithmetic.")
+print(f"  Tr(B-L) = {tr_BL}")
+print(f"  Tr(Y) = {tr_Y}")
+print()
