@@ -1,25 +1,26 @@
 # ============================================================
-# WIN PARADIGM — WIDGET 1: THE DERIVATION CHAIN
+# WIN PARADIGM — WIDGET 1: THE DERIVATION CHAIN (v2)
 # ============================================================
 # Instructions:
-#   1. Open a new Google Colab notebook.
+#   1. Open a Google Colab notebook.
 #   2. Paste this ENTIRE cell into the first code cell.
 #   3. Run it. Scroll down for the interactive figure.
 #
-# Everything (installs, imports, data, figure, controls) is
-# self-contained in this one cell.
+# v2 adds a verification-status badge to every node:
+#   green  = verified (arithmetic or numerically checked)
+#   yellow = derived but interpretive
+#   orange = unverified / not yet derived
+#   red    = falsified or retracted by the paper itself
+#   purple = fitted (has free parameters)
 # ============================================================
 
-# --- Install dependencies (Colab) ---
 !pip install -q ipywidgets plotly kaleido
 
-# --- Enable custom widget manager in Colab ---
 from google.colab import output
 output.enable_custom_widget_manager()
 
-# --- Core imports ---
 import ipywidgets as widgets
-from IPython.display import display, HTML, clear_output
+from IPython.display import display, HTML
 import plotly.graph_objects as go
 import plotly.io as pio
 pio.renderers.default = "colab"
@@ -27,187 +28,195 @@ pio.renderers.default = "colab"
 # ============================================================
 # THE DERIVATION CHAIN
 # ============================================================
-# Each node: id, label, equation, explanation, source, category, level.
-# Categories are color-coded in the figure.
-# Levels set the horizontal position (left-to-right = input to prediction).
 
 CHAIN = [
-    # --- Level 0: the single input ---
     dict(id="photon", label="Photon\n(spin-1, massless)",
-         eq=r"m = 0,\ s = 1",
-         exp="The massless spin-1 particle. Starting point of the entire framework.",
+         eq=r"m = 0,  s = 1",
+         exp="The massless spin-1 particle. Starting point of the framework.",
          src="WIN_Derivation_of_d4.pdf",
-         cat="input", level=0),
+         cat="input", level=0, status="verified"),
 
     dict(id="helicity", label="2 helicity states",
-         eq=r"h = +1,\ -1",
+         eq=r"h = +1, -1",
          exp="The photon has exactly two helicity (circular polarization) states. "
-             "Each is described by a complex amplitude, so each has 2 real components.",
-         src="WIN_Derivation_of_d4.pdf Section 2",
-         cat="input", level=0),
+             "Each is a complex amplitude with two real components.",
+         src="WIN_Derivation_of_d4.pdf Sec 2",
+         cat="input", level=0, status="verified"),
 
     dict(id="phase4d", label="4D phase space\n(Q1, P1, Q2, P2)",
-         eq=r"(Q_1,P_1,Q_2,P_2) in R^4",
+         eq=r"(Q1,P1,Q2,P2) in R^4",
          exp="Right helicity -> (Q1, P1). Left helicity -> (Q2, P2). "
-             "Together they span a 4-dimensional real phase space.",
-         src="WIN_Derivation_of_d4.pdf Section 3",
-         cat="input", level=0),
+             "Two complex amplitudes = four real numbers.",
+         src="WIN_Derivation_of_d4.pdf Sec 3",
+         cat="input", level=0, status="verified"),
 
     dict(id="wick", label="Wick rotation",
          eq=r"theta: Euclidean -> Lorentzian",
-         exp="A rotation of the phase space that turns the Euclidean metric into a "
-             "Lorentzian one. The bridge between the photon's phase space and spacetime.",
-         src="WIN_Derivation_of_d4.pdf Sections 4-5",
-         cat="input", level=0),
+         exp="The Wick rotation is standard in QFT (Osterwalder-Schrader). "
+             "The interpretive step is the identification of the photon's "
+             "phase space with spacetime itself.",
+         src="WIN_Derivation_of_d4.pdf Sec 4-5",
+         cat="input", level=0, status="interpretive"),
 
     dict(id="d4", label="d = 4",
          eq=r"ds^2 = -Q1^2 + P1^2 + Q2^2 + P2^2",
-         exp="4D spacetime with Lorentzian signature. The metric oscillates with "
-             "period 2*pi in the Wick angle; a 'big bang' occurs every pi. "
-             "d=4 is not an input - it is derived.",
-         src="WIN_Derivation_of_d4.pdf Section 7",
-         cat="core", level=1),
+         exp="Given the identification of the 4D phase space with spacetime, "
+             "d = 4 follows. The paper itself notes in Sec 8.2 that this is "
+             "not a proof that the phase space IS spacetime.",
+         src="WIN_Derivation_of_d4.pdf Sec 7",
+         cat="core", level=1, status="interpretive"),
 
-    # --- Level 2: three anchors ---
     dict(id="anchor_comb", label="Anchor 1 (Combinatorial)\np(d) = d+1",
          eq=r"p(4) = 5 = rank(SO(10))",
-         exp="The partition function p(d) satisfies p(d) = d+1 uniquely at d=4. "
-             "This equals the rank of SO(10).",
-         src="WIN PROOF Section 2.1",
-         cat="anchor", level=2),
+         exp="Pure arithmetic. Partitions of 4 are {4, 3+1, 2+2, 2+1+1, "
+             "1+1+1+1}, so p(4) = 5. rank(SO(10)) = 5.",
+         src="WIN PROOF Sec 2.1",
+         cat="anchor", level=2, status="verified"),
 
     dict(id="anchor_phys", label="Anchor 2 (Physical)\nrank(GUT) = d+1",
+         exp="The SM gauge group has rank 4. Including a right-handed "
+             "neutrino requires rank >= 5. The smallest simple group with "
+             "rank 5 and a 16-dim spinor is SO(10).",
          eq=r"rank(SM)=4  =>  rank(GUT) >= 5",
-         exp="The SM gauge group has rank 4. Including a right-handed neutrino "
-             "requires rank >= 5. The smallest simple group with rank 5 and a "
-             "16-dim spinor is SO(10).",
-         src="WIN PROOF Section 2.2",
-         cat="anchor", level=2),
+         src="WIN PROOF Sec 2.2",
+         cat="anchor", level=2, status="verified"),
 
     dict(id="anchor_info", label="Anchor 3 (Information)\nS_self minimized",
          eq=r"S_self = (N-64)^2 + 100(V/H-3)^2",
-         exp="The self-simulation cost function is minimized at (N,V,H)=(64,48,16). "
-             "Measures error-correction cost of encoding the visible sector in the hidden sector.",
-         src="WIN PROOF Section 2.3",
-         cat="anchor", level=2),
+         exp="The self-simulation cost function is minimized at "
+             "(N,V,H) = (64,48,16). NOTE: the paper's own falsifications "
+             "list (§8/§10) retracts this anchor as circular.",
+         src="WIN PROOF Sec 2.3 / README Sec 8",
+         cat="anchor", level=2, status="falsified"),
 
-    # --- Level 3: group theory ---
     dict(id="so10", label="SO(10) GUT",
          eq=r"SO(10), rank = 5",
-         exp="The Grand Unified Theory group. p(4)=5=rank(SO(10)) selects it uniquely.",
-         src="WIN PROOF Section 4.1",
-         cat="group", level=3),
+         exp="SO(10) is standard GUT physics. The WIN-specific claim is "
+             "that SO(10) itself follows from d = 4 via p(4) = 5, which "
+             "rests on the interpretive d = 4 step above.",
+         src="WIN PROOF Sec 4.1",
+         cat="group", level=3, status="interpretive"),
 
     dict(id="weyl16", label="Weyl spinor\n2^d = 16",
          eq=r"dim(spinor) = 2^d = 16",
-         exp="The 16-dimensional spinor of SO(10) contains exactly one full "
-             "Standard Model generation (15 states + right-handed neutrino).",
-         src="WIN PROOF Section 4.2",
-         cat="group", level=3),
+         exp="Standard: 2^4 = 16. The 16-spinor of SO(10) contains "
+             "exactly one SM generation, verified in the matter-"
+             "representation document.",
+         src="WIN PROOF Sec 4.2 / SM Matter Reps",
+         cat="group", level=3, status="verified"),
 
-    # --- Level 4: sector decomposition ---
     dict(id="H16", label="Hidden sector\nH = 2^d = 16",
          eq=r"H = 2^d = 16",
-         exp="The encoded copy of the visible sector. Provides redundancy for "
-             "error correction. Hidden sector reservoir.",
+         exp="Arithmetic given d = 4. The interpretation (H acts as an "
+             "error-correction reservoir) is asserted but not derived.",
          src="WIN PROOF Part I",
-         cat="sector", level=4),
+         cat="sector", level=4, status="verified"),
 
     dict(id="gen3", label="3 generations\nd - 1 = 3",
          eq=r"N_gen = d - 1 = 3",
-         exp="Three generations of fermions come from d-1.",
+         exp="Arithmetic (4 - 1 = 3). The claim that the number of "
+             "generations equals d - 1 is WIN-specific and asserted, "
+             "not derived from first principles.",
          src="WIN PROOF Part I",
-         cat="sector", level=4),
+         cat="sector", level=4, status="unverified"),
 
     dict(id="V48", label="Visible sector\nV = (d-1)*2^d = 48",
-         eq=r"V = (d-1) * 2^d = 48",
-         exp="Three generations times 16 states = 48. The observable sector.",
+         eq=r"V = (d-1)*2^d = 48",
+         exp="Arithmetic: 3 * 16 = 48. Three generations of 16-spinors.",
          src="WIN PROOF Part I",
-         cat="sector", level=4),
+         cat="sector", level=4, status="verified"),
 
-    dict(id="N64", label="Total substrate\nN = V + H = d*2^d = d^3 = 64",
+    dict(id="N64", label="Total substrate\nN = V + H = 64",
          eq=r"N = 48 + 16 = 64",
-         exp="64 Majorana modes. The complete substrate. Emerges from six isomorphic "
-             "representations of Cl(64) - structural duality, not coincidence.",
-         src="WIN PROOF Section 8",
-         cat="substrate", level=5),
+         exp="Arithmetic: 48 + 16 = 64. Also = d * 2^d = 4 * 16 = 64, "
+             "and d^3 = 4^3 = 64. Clifford structure 2^6 = 64.",
+         src="WIN PROOF Sec 8",
+         cat="substrate", level=5, status="verified"),
 
     dict(id="so64", label="Cl(64) -> SO(64)\n-> SO(10) -> SM",
          eq=r"SO(64) > SO(10) > SU(3)xSU(2)xU(1)",
-         exp="Clifford algebra Cl(64) generated by 64 Majorana modes spans SO(64). "
-             "The embedding chain recovers the Standard Model.",
-         src="WIN PROOF Section 4.1",
-         cat="substrate", level=5),
+         exp="SO(64) -> SO(10) is standard group theory (subgroup chain). "
+             "The claim that the substrate's Clifford algebra is Cl(64) "
+             "follows from N = 64 Majorana modes, which is asserted by "
+             "the framework.",
+         src="WIN PROOF Sec 4.1",
+         cat="substrate", level=5, status="interpretive"),
 
-    # --- Level 6: torus substrate ---
     dict(id="torus", label="8x8 torus substrate",
-         eq=r"T^2 = R^2 / Z^2, 8x8 lattice",
-         exp="The substrate is an 8x8 torus with periodic boundary conditions. "
-             "Its Laplacian spectrum has a 14-fold degeneracy at eigenvalue lambda = 4.",
-         src="README Section 3.1",
-         cat="torus", level=6),
-
-    dict(id="spin_structures", label="4 spin structures\n(+,+), (+,-), (-,+), (-,-)",
-         eq=r"n at lambda=4:  14, 7, 7, 3",
-         exp="The torus has four spin structures. Their mode counts at lambda=4 "
-             "are 14, 7, 7, 3 - matching the SM's 14 particles, two chiral halves, "
-             "and three generations.",
-         src="README Section 3.2",
-         cat="torus", level=6),
+         eq=r"T^2, 8x8 lattice with PBC",
+         exp="The identification of N = 64 with an 8x8 torus is asserted "
+             "by the framework. No derivation is given connecting the "
+             "Cl(64) Clifford algebra to an 8x8 spatial torus.",
+         src="README Sec 3.1",
+         cat="torus", level=6, status="unverified"),
 
     dict(id="modes14", label="14 modes at lambda = 4",
          eq=r"lambda = 4.000 (x14)",
-         exp="The 14-fold degeneracy at lambda=4 is the particle multiplet: "
-             "5 Substrate Eigenmodes + 9 Mesh Resonances.",
-         src="README Section 3.1",
-         cat="particles", level=7),
+         exp="VERIFIED by hand: with the 5-point stencil "
+             "lambda = 4 - 2cos(pi*n1/4) - 2cos(pi*n2/4), the equation "
+             "lambda = 4 requires cos(pi*n1/4) + cos(pi*n2/4) = 0, "
+             "which has 14 solutions in the range 0..7.",
+         src="README Sec 3.1",
+         cat="particles", level=7, status="verified"),
 
-    # --- Level 7: particles ---
+    dict(id="spin_structures", label="4 spin structures\n14, 7, 7, 3",
+         eq=r"n at lambda=4:  14, 7, 7, 3",
+         exp="Under test. The mode counts 14, 7, 7, 3 are asserted in the "
+             "README Sec 3.2 but no derivation is given in the available "
+             "documents.",
+         src="README Sec 3.2",
+         cat="particles", level=6, status="unverified"),
+
     dict(id="eigen", label="5 Substrate Eigenmodes\ndark, tau, W, Z, H",
-         eq=r"delta = 0: exact N/4",
-         exp="Particles with exact N/4 value (delta=0). Directly determined by "
-             "d=4 and H=16. The fundamental components.",
-         src="WIN PROOF Section 5.1",
-         cat="particles", level=7),
+         eq=r"delta = 0",
+         exp="The partition of the 14 modes into 5 exact-eigenvalue "
+             "particles and 9 approximate-resonance particles is "
+             "asserted. The formulas for the N/4 values are given.",
+         src="WIN PROOF Sec 5.1",
+         cat="particles", level=7, status="unverified"),
 
     dict(id="mesh", label="9 Mesh Resonances\nnu, e, mu, u, d, s, c, b, t",
-         eq=r"delta != 0: approx N/4",
-         exp="Particles with approximate N/4 (delta != 0). Emergent from the "
-             "interaction between substrate modes.",
-         src="WIN PROOF Section 5.2",
-         cat="particles", level=7),
+         eq=r"delta != 0",
+         exp="The 9 mesh resonances correspond to the 9 SM fermions. "
+             "The N/4 values fit via the shell formula with 14 free "
+             "parameters (shells fitted).",
+         src="WIN PROOF Sec 5.2 / Particle Spectrum doc",
+         cat="particles", level=7, status="fitted"),
 
-    # --- Level 8: predictions ---
     dict(id="kL", label="Warp factor\nkL = 38.442527",
          eq=r"kL = N(d-1)/(d+1) + sin^2(theta_W)/(5.6 - d/(d+1)^2)",
-         exp="Derived from d=4 and the Weinberg angle. Observed kL = 38.442488. "
-             "Agreement to 0.0001%.",
-         src="README Section 6",
-         cat="prediction", level=8),
+         exp="VERIFIED numerically: 64*3/5 + 0.23135/5.44 = 38.4 + 0.042527 "
+             "= 38.442527. Observed value 38.442488, error 1e-6.",
+         src="kL Full Derivation",
+         cat="prediction", level=8, status="verified"),
 
     dict(id="higgs", label="Higgs mass\n125.138 GeV",
          eq=r"m_H = sqrt(2 * lambda_eff) * v_EW",
-         exp="Predicted Higgs mass: 125.138 GeV. Experiment: 125.25 +/- 0.17 GeV. "
-             "Error: 0.090% (0.66 sigma).",
-         src="README Section 7",
-         cat="prediction", level=8),
+         exp="Rev. 3.1 derivation: lambda_tree = ln(kL)/(3*pi^2) = 0.123246, "
+             "Delta_lambda_top = (3*y_t^4/16pi^2)*ln(m_t/m_H) = 0.005906, "
+             "lambda_eff = 0.129152, m_H = 125.138 GeV. "
+             "Experiment 125.25 +/- 0.17 GeV. Error 0.090%, pull 0.66 sigma.",
+         src="WIN Proof Series Experiment 2 Rev 3.1",
+         cat="prediction", level=8, status="verified"),
 
     dict(id="weinberg", label="Weinberg angle\n0.23135",
          eq=r"sin^2(theta_W) = 3/8 - Delta_RGE + kL/(5.6*pi*100)",
-         exp="Predicted sin^2 theta_W = 0.23135. Experiment: 0.23122 +/- 0.00004. "
-             "Error: 0.06%.",
-         src="README Section 7",
-         cat="prediction", level=8),
+         exp="Self-consistent with the kL formula. "
+             "Predicted 0.23135, experiment 0.23122 +/- 0.00004. "
+             "Error 0.06%.",
+         src="README Sec 7",
+         cat="prediction", level=8, status="verified"),
 
     dict(id="spectrum", label="Particle spectrum\n14/14 shells, RMS = 1.85",
          eq=r"N/4 = (kL/(H+d)) * PR * exp(-(pi/d) * shell)",
-         exp="All 14 shells correct. RMS = 1.85 for the N/4 values. "
-             "Particle masses from a zero-parameter formula.",
-         src="README Section 4.4",
-         cat="prediction", level=8),
+         exp="Fitted: the paper's own latest version states 'The shells "
+             "are free parameters (one per particle). The model has 14 "
+             "free parameters total.' The formula shape is derived; the "
+             "shell assignment is not.",
+         src="WIN Particle Spectrum doc, Sec 5, Sec 9",
+         cat="prediction", level=8, status="fitted"),
 ]
 
-# Edges: (parent, child)
 EDGES = [
     ("photon","helicity"), ("helicity","phase4d"), ("phase4d","wick"),
     ("wick","d4"),
@@ -223,41 +232,36 @@ EDGES = [
     ("eigen","spectrum"), ("mesh","spectrum"),
 ]
 
-# Color palette by category
-CAT_COLOR = {
-    "input":      "#4C72B0",
-    "core":       "#DD8452",
-    "anchor":     "#55A868",
-    "group":      "#C44E52",
-    "sector":     "#8172B3",
-    "substrate":  "#937860",
-    "torus":      "#DA8BC3",
-    "particles":  "#8C8C8C",
-    "prediction": "#CCB974",
+# Color by verification status
+STATUS_COLOR = {
+    "verified":     "#2E8B57",   # sea green
+    "interpretive": "#DAA520",   # goldenrod
+    "unverified":   "#E67E22",   # orange
+    "falsified":    "#C0392B",   # dark red
+    "fitted":       "#8E44AD",   # purple
 }
 
-CAT_LABEL = {
-    "input":      "Input",
-    "core":       "Core",
-    "anchor":     "Anchor",
-    "group":      "Group theory",
-    "sector":     "Sectors",
-    "substrate":  "Substrate",
-    "torus":      "Torus",
-    "particles":  "Particles",
-    "prediction": "Predictions",
+STATUS_LABEL = {
+    "verified":     "Verified",
+    "interpretive": "Derived (interpretive)",
+    "unverified":   "Unverified",
+    "falsified":    "Falsified / retracted",
+    "fitted":       "Fitted (free parameters)",
+}
+
+STATUS_ICON = {
+    "verified":     "OK",
+    "interpretive": "~",
+    "unverified":   "?",
+    "falsified":    "X",
+    "fitted":       "F",
 }
 
 # ============================================================
 # FIGURE BUILDER
 # ============================================================
 
-def build_figure(highlight=None):
-    """Build a Plotly figure of the derivation chain.
-
-    Layout is a layered DAG (left-to-right by 'level').
-    If `highlight` is a node id, that node and its neighbors are emphasized.
-    """
+def build_figure():
     by_level = {}
     for n in CHAIN:
         by_level.setdefault(n["level"], []).append(n)
@@ -269,15 +273,6 @@ def build_figure(highlight=None):
             y = (i - (n - 1) / 2) * 1.0
             pos[node["id"]] = (lvl * 2.2, y)
 
-    if highlight:
-        neighbors = {highlight}
-        for a, b in EDGES:
-            if a == highlight: neighbors.add(b)
-            if b == highlight: neighbors.add(a)
-    else:
-        neighbors = {n["id"] for n in CHAIN}
-
-    # --- Edges ---
     edge_x, edge_y = [], []
     for a, b in EDGES:
         x0, y0 = pos[a]
@@ -291,10 +286,8 @@ def build_figure(highlight=None):
         hoverinfo="none", mode="lines", showlegend=False,
     )
 
-    # --- Nodes ---
     node_x, node_y, node_text, node_hover = [], [], [], []
     node_color, node_size = [], []
-    node_line_width, node_line_color = [], []
 
     for n in CHAIN:
         x, y = pos[n["id"]]
@@ -304,19 +297,12 @@ def build_figure(highlight=None):
         node_hover.append(
             f"<b>{n['label'].replace(chr(10),' ')}</b><br>"
             f"<i>{n['eq']}</i><br><br>"
+            f"<b>Status:</b> {STATUS_LABEL[n['status']]}<br><br>"
             f"{n['exp']}<br><br>"
             f"<span style='color:#888'>Source: {n['src']}</span>"
         )
-        if n["id"] in neighbors:
-            node_color.append(CAT_COLOR[n["cat"]])
-            node_size.append(28)
-            node_line_width.append(2)
-            node_line_color.append("black")
-        else:
-            node_color.append("#E8E8E8")
-            node_size.append(18)
-            node_line_width.append(1)
-            node_line_color.append("#CCCCCC")
+        node_color.append(STATUS_COLOR[n["status"]])
+        node_size.append(28)
 
     node_trace = go.Scatter(
         x=node_x, y=node_y,
@@ -329,43 +315,41 @@ def build_figure(highlight=None):
         marker=dict(
             size=node_size,
             color=node_color,
-            line=dict(
-                width=node_line_width,
-                color=node_line_color,
-            ),
+            line=dict(width=2, color="black"),
         ),
         showlegend=False,
     )
 
-    # --- Legend ---
+    # Legend via dummy traces
     legend_traces = []
-    for cat, color in CAT_COLOR.items():
+    for status in ["verified", "interpretive", "unverified",
+                   "falsified", "fitted"]:
         legend_traces.append(go.Scatter(
             x=[None], y=[None], mode="markers",
-            marker=dict(size=12, color=color),
-            name=CAT_LABEL[cat], showlegend=True,
+            marker=dict(size=14, color=STATUS_COLOR[status],
+                        line=dict(width=1, color="black")),
+            name=STATUS_LABEL[status], showlegend=True,
         ))
 
     fig = go.Figure(data=[edge_trace, node_trace] + legend_traces)
 
     fig.update_layout(
         title=dict(
-            text="<b>WIN Paradigm - Derivation Chain</b><br>"
-                 "<sub>Photon -> d=4 -> SO(10) -> N=64 -> 14 particles. "
-                 "Hover a node for details.</sub>",
+            text="<b>WIN Paradigm — Derivation Chain (v2)</b><br>"
+                 "<sub>Color indicates verification status. "
+                 "Hover any node for details.</sub>",
             x=0.5, xanchor="center",
         ),
         showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.05,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.08,
                     xanchor="center", x=0.5),
         hovermode="closest",
-        margin=dict(l=20, r=20, t=80, b=40),
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False,
-                   title=""),
+        margin=dict(l=20, r=20, t=80, b=60),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False,
-                   title="", scaleanchor="x", scaleratio=0.6),
+                   scaleanchor="x", scaleratio=0.6),
         plot_bgcolor="white",
-        height=850,
+        height=880,
         dragmode="pan",
     )
     return fig
@@ -376,9 +360,13 @@ def build_figure(highlight=None):
 
 detail = widgets.Output()
 selected = widgets.Dropdown(
-    options=[("-- none --", None)] + [(n["label"].replace("\n", " "), n["id"]) for n in CHAIN],
+    options=[("-- none --", None)] + [
+        (f"{STATUS_ICON[n['status']]}  {n['label'].replace(chr(10),' ')}",
+         n["id"])
+        for n in CHAIN
+    ],
     description="Jump to:",
-    layout=widgets.Layout(width="420px"),
+    layout=widgets.Layout(width="480px"),
 )
 
 def show_node(node_id):
@@ -395,13 +383,16 @@ def show_node(node_id):
 
     with detail:
         display(HTML(f"""
-        <div style="border-left:6px solid {CAT_COLOR[n['cat']]};
+        <div style="border-left:6px solid {STATUS_COLOR[n['status']]};
                     padding:14px 18px; margin:10px 0;
                     background:#FAFAFA; border-radius:6px;
                     font-family: -apple-system, system-ui, sans-serif;">
           <div style="font-size:11px; color:#888; letter-spacing:1px;
                       text-transform:uppercase;">
-            {CAT_LABEL[n['cat']]} &middot; Level {n['level']}
+            {n['cat']} &middot; Level {n['level']} &middot;
+            <span style="color:{STATUS_COLOR[n['status']]}; font-weight:bold;">
+              {STATUS_LABEL[n['status']]}
+            </span>
           </div>
           <h2 style="margin:4px 0 6px 0; color:#222;">
             {n['label'].replace(chr(10), ' ')}
@@ -430,79 +421,36 @@ def on_dropdown_change(change):
 selected.observe(on_dropdown_change)
 
 # ============================================================
-# GUIDED WALKTHROUGH (slider)
+# RENDER
 # ============================================================
 
-ORDER = [
-    "photon", "helicity", "phase4d", "wick", "d4",
-    "anchor_comb", "anchor_phys", "anchor_info",
-    "so10", "weyl16",
-    "H16", "gen3", "V48", "N64", "so64",
-    "torus", "spin_structures",
-    "modes14", "eigen", "mesh",
-    "kL", "higgs", "weinberg", "spectrum",
-]
-
-step = widgets.IntSlider(
-    min=0, max=len(ORDER) - 1, step=1, value=0,
-    description="Step:",
-    continuous_update=False,
-    layout=widgets.Layout(width="600px"),
-)
-
-step_out = widgets.Output()
-
-def render_step(i):
-    step_out.clear_output(wait=True)
-    nid = ORDER[i]
-    n = next(x for x in CHAIN if x["id"] == nid)
-    with step_out:
-        display(HTML(f"""
-        <div style="font-family:-apple-system,system-ui,sans-serif;
-                    border:1px solid #DDD; border-radius:8px;
-                    padding:18px 22px; max-width:760px; background:#FFF;">
-          <div style="font-size:12px; color:#999;">
-            Step {i+1} of {len(ORDER)}
-          </div>
-          <h2 style="margin:6px 0; color:#111;">
-            {n['label'].replace(chr(10), ' ')}
-          </h2>
-          <div style="font-size:18px; font-family:'Cambria Math',serif;
-                      padding:10px 14px; background:#F7F7F7;
-                      border-radius:4px; display:inline-block;
-                      margin:6px 0;">
-            {n['eq']}
-          </div>
-          <p style="font-size:15px; line-height:1.6; color:#333;">
-            {n['exp']}
-          </p>
-          <div style="font-size:12px; color:#777;">
-            {CAT_LABEL[n['cat']]} &middot; {n['src']}
-          </div>
-        </div>
-        """))
-
-step.observe(lambda c: render_step(c["new"]) if c["name"] == "value" else None)
-
-# ============================================================
-# RENDER EVERYTHING
-# ============================================================
-
-# 1) The main interactive flowchart
 fig = build_figure()
 fig.show()
 
-# 2) Dropdown + detail panel
 display(widgets.HTML("<h3 style='font-family:sans-serif'>Explore a node</h3>"))
 display(selected)
 display(detail)
 show_node("d4")
 
-# 3) Guided walkthrough
-display(widgets.HTML("<h3 style='font-family:sans-serif'>Walk through the derivation</h3>"))
-display(step)
-display(step_out)
-render_step(0)
+# Summary tally
+from collections import Counter
+tally = Counter(n["status"] for n in CHAIN)
+summary_lines = "<br>".join(
+    f"<span style='color:{STATUS_COLOR[s]}; font-weight:bold;'>"
+    f"{STATUS_LABEL[s]}</span>: {tally[s]} node(s)"
+    for s in ["verified", "interpretive", "unverified",
+              "falsified", "fitted"]
+)
+display(widgets.HTML(f"""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:900px; margin-top:18px; padding:14px 18px;
+            background:#FAFAFA; border-left:4px solid #666;
+            border-radius:4px; line-height:1.6;">
+  <b>Status tally</b><br>
+  {summary_lines}
+</div>
+"""))
 
-print("\nDone. Hover any node in the figure above for details,")
-print("or use the dropdown and slider to explore.")
+print("\nDone. Hover any node for details, or use the dropdown.")
+print("Color = verification status. Green is proven, red is retracted,")
+print("purple is fitted (has free parameters), orange is unverified.")
