@@ -1,8 +1,8 @@
-# A Derived Rule for the Shell Assignment in the WIN Paradigm
+# A Derived Rule for the Shell Assignment in the Four Dimension Lattice Model
 
-**Warped Information Number (WIN) Paradigm — White Paper**
+**Four Dimension Lattice Model (FDLM) — White Paper**
 
-**Author:** Stanley Preschutti (Entropy Research Institute / Information Physics Institute)
+**Author:** Stanley Preschutti (Entropia Research Institute / Information Physics Institute)
 **ORCID:** 0009-0004-5445-1744
 **Date:** September 15, 2026
 **Status:** Research finding — derivation, no fitted parameters
@@ -11,7 +11,7 @@
 
 ## Abstract
 
-The WIN Paradigm assigns 14 particle modes at eigenvalue λ = 4 on an 8×8 torus to 14 Standard Model particles. Each mode is given a "shell" index (0, 1, 1.5, 2, or 3) that determines its mass through the N/4 formula. In earlier versions of the framework, the shells were treated as 14 fitted parameters.
+The Four Dimension Lattice Model (FDLM) assigns 14 particle modes at eigenvalue λ = 4 on an 8×8 torus to 14 Standard Model particles. Each mode is given a "shell" index (0, 1, 1.5, 2, or 3) that determines its mass through the N/4 formula. In earlier versions of the framework, the shells were treated as 14 fitted parameters.
 
 This white paper presents a **derived rule** for the shell assignment. The rule uses only the mode vector's support (the number of lattice sites with non-negligible amplitude) and the mode's winding number n₁. It gives **14/14 matches** with the observed Standard Model particle masses, using **no fitted parameters**.
 
@@ -23,9 +23,9 @@ The support values are exactly **64, 48, 32** — which are the framework consta
 
 ## 1. Setup
 
-### 1.1 The substrate
+### 1.1 The lattice substrate
 
-The WIN Paradigm identifies the vacuum substrate with an 8×8 torus lattice (64 sites) with periodic boundary conditions.
+The FDLM identifies the vacuum substrate with an 8×8 torus lattice (64 sites) with periodic boundary conditions.
 
 ### 1.2 The particle multiplet
 
@@ -157,7 +157,7 @@ Applying the rule to all 14 modes:
 
 ### 3.3 Physical interpretation
 
-The support determines which "mesh" the mode is caught in:
+The support determines which region of the lattice the mode occupies:
 
 - **Support 64 (N):** the whole torus is excited. The mode is delocalized. Shell 0 or 1. Light particles (ν, e).
 - **Support 48 (V):** 3/4 of the torus is excited. The mode is partially localized. Shells 1, 1.5, 2. Medium-mass particles (quarks, charged leptons).
@@ -210,11 +210,11 @@ now uses:
 
 ### 5.2 The support identity is non-trivial
 
-The identity `support = 64, 48, 32 = N, V, N/2` was not given in the paper. It is a computed result: the mode vectors on the 8×8 torus have supports that happen to equal the framework constants. This is either a remarkable coincidence or a manifestation of the substrate structure.
+The identity `support = 64, 48, 32 = N, V, N/2` was not given in the paper. It is a computed result: the mode vectors on the 8×8 torus have supports that happen to equal the framework constants. This is either a remarkable coincidence or a manifestation of the lattice structure.
 
 ### 5.3 The winding number ordering is a "processing direction"
 
-The shell increases with n₁. This suggests the machine processes modes in a specific direction on the torus — a "processing direction" that breaks the torus's mirror symmetry.
+The shell increases with n₁. This suggests the lattice processes modes in a specific direction on the torus — a "processing direction" that breaks the torus's mirror symmetry.
 
 ---
 
@@ -234,13 +234,13 @@ The paper assigns modes to particles by entropy rank. The derived shell rule use
 
 ### 6.4 What does the support physically represent?
 
-The support is the number of lattice sites with non-negligible amplitude. Physically, this could represent the mode's "footprint" on the substrate, or the number of substrate sites involved in processing the mode.
+The support is the number of lattice sites with non-negligible amplitude. Physically, this could represent the mode's "footprint" on the lattice, or the number of lattice sites involved in processing the mode.
 
 ---
 
-## 7. Relation to the WIN Framework
+## 7. Relation to the FDLM Framework
 
-This white paper is a refinement of the WIN Paradigm's particle spectrum section. It replaces the fitted shell parameters with a derived rule.
+This white paper is a refinement of the FDLM's particle spectrum section. It replaces the fitted shell parameters with a derived rule.
 
 **What is new:**
 - The support = N, V, N/2 identity.
@@ -252,13 +252,13 @@ This white paper is a refinement of the WIN Paradigm's particle spectrum section
 - The substrate is the 8×8 torus.
 - The particle multiplet is the 14 modes at λ = 4.
 - The mass formula is N/4 = (kL/(H+d)) · PR · exp(−(π/d) · shell).
-- The rest of the WIN framework.
+- The rest of the FDLM framework.
 
 **What is open:**
 - The physical interpretation of support and n₁ ordering.
 - The derivation of d = 4 from the photon's helicity.
 - The SO(10) embedding and the dark photon derivation.
-- The alpha_EM derivation.
+- The α_EM derivation.
 
 ---
 
@@ -296,7 +296,7 @@ Run the following Python code to independently verify every claim in this white 
 ```python
 # ============================================================
 # REPRODUCIBLE VERIFICATION SCRIPT
-# A Derived Rule for the Shell Assignment in the WIN Paradigm
+# A Derived Rule for the Shell Assignment in the FDLM
 # ============================================================
 #
 # This script independently verifies:
@@ -478,18 +478,18 @@ print(f"Support robust to threshold:         VERIFIED")
 print()
 print("White paper claims all reproduce.")
 
+---
+
 ## Citation
 
 ```bibtex
-@misc{preschutti2026win,
-  title  = {Warped Information Number (WIN) Paradigm: A Dimensional-Reduction Framework Deriving the Standard Model from the Spacetime Dimension},
+@misc{preschutti2026fdlm,
+  title  = {Four Dimension Lattice Model (FDLM): A Dimensional-Reduction Framework Deriving the Standard Model from the Spacetime Dimension},
   author = {Preschutti, Stanley},
   year   = {2026},
   note   = {Preprint, under independent verification},
-  url    = {https://github.com/007STAN/WIN-PARADIGM-VALIDATION}
+  url    = {https://github.com/007STAN/FDLM-VALIDATION}
 }
-```
 
-
-
-
+Copyright © 2026 Stanley Preschutti. All Rights Reserved.
+Open for independent verification and peer review.
