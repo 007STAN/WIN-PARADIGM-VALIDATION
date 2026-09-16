@@ -1,0 +1,389 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 16: THE PROCESSOR ARCHITECTURE
+# ============================================================
+# Instructions:
+#   1. Paste this ENTIRE cell into a new Google Colab cell.
+#   2. Run it. Scroll down for the interactive figure.
+#
+# This widget visualizes the vacuum as a calibration-based
+# processor. It shows the six components of the processor:
+#
+#   HARDWARE    the 8x8 torus (derived)
+#   STATE       the 14-mode multiplet at lambda = 4 (derived)
+#   CLOCK       the Wick rotation (characterized)
+#   FUNCTION    the processing weight m_f(r) (derived)
+#   DATABASE    four references + nine perturbations
+#   READOUT     N/4 as a monotone function of m_f(r)
+#
+# Click any component to see its derivation status and
+# its role in the processor.
+# ============================================================
+
+!pip install -q ipywidgets plotly numpy
+
+from google.colab import output
+output.enable_custom_widget_manager()
+
+import numpy as np
+import ipywidgets as widgets
+from IPython.display import display, HTML
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+pio.renderers.default = "colab"
+from collections import defaultdict
+
+# ============================================================
+# FRAMEWORK CONSTANTS
+# ============================================================
+d = 4
+N = d * 2**d        # 64
+H = 2**d            # 16
+V = (d - 1) * 2**d  # 48
+L = 8
+kL = 38.442527
+
+# ============================================================
+# THE SIX COMPONENTS OF THE PROCESSOR
+# ============================================================
+
+COMPONENTS = [
+    {
+        "id": "hardware",
+        "label": "HARDWARE",
+        "subtitle": "8x8 Torus",
+        "eq": "L^2 = N = 64, coord = d = 4",
+        "status": "derived",
+        "role": "The discrete substrate. An 8x8 torus with periodic "
+                "boundary conditions.",
+        "how": "Selected by three constraints: N = 64 (from d = 4), "
+               "coordination = d = 4 (from the 5-point Laplacian), "
+               "midpoint multiplicity = 14 (from the particle count). "
+               "Among 11 hypercubic decompositions of 64, only 8x8 "
+               "passes all three.",
+        "color": "#2E8B57",
+    },
+    {
+        "id": "state",
+        "label": "STATE",
+        "subtitle": "14 modes at lambda = 4",
+        "eq": "mult(lambda=4) = 14",
+        "status": "derived",
+        "role": "The current state of the processor. The 14 self-paired "
+                "modes at the mirror fixed point.",
+        "how": "The Laplacian spectrum is mirror-symmetric under "
+               "lambda -> 8 - lambda. The 50 paired modes cancel in "
+               "mirror pairs. The 14 self-paired modes at lambda = 4 "
+               "survive as the residual.",
+        "color": "#2E8B57",
+    },
+    {
+        "id": "clock",
+        "label": "CLOCK",
+        "subtitle": "Wick rotation",
+        "eq": "ds^2(theta) = 2 sin^2(theta)",
+        "status": "characterized",
+        "role": "The processor's clock. The Wick angle theta "
+                "parametrizes the transition from Euclidean to "
+                "Lorentzian signature.",
+        "how": "The metric oscillates with period pi in theta. "
+               "Whether theta is static (theta = pi/2 fixed) or "
+               "dynamical (theta evolves) is not determined by the "
+               "framework. Both are consistent with observation. The "
+               "natural period is pi in theta units, but the physical "
+               "time unit (t_P, kL*t_P, or 1/(J/t_P)) is free.",
+        "color": "#DAA520",
+    },
+    {
+        "id": "function",
+        "label": "FUNCTION",
+        "subtitle": "m_f(r) = A*(r/r_e)^B*exp(C*(r-r_e))",
+        "eq": "A = kL/7.88, B = H + kL/26, C = -kL*(d+4.23)",
+        "status": "derived",
+        "role": "The processing weight assigned to each mode. The "
+                "function maps the mode's shape parameter r to a "
+                "'processing weight' that is the primary ordering "
+                "variable.",
+        "how": "The coefficients are framework-adjacent: A, B, C use "
+               "kL, H, d and three constants (7.88, 26, 4.23) that are "
+               "not yet derived. The shape parameter r itself is a "
+               "property of the full mode vector (64 components), also "
+               "not yet derived.",
+        "color": "#2E8B57",
+    },
+    {
+        "id": "database",
+        "label": "DATABASE",
+        "subtitle": "4 references + 9 perturbations",
+        "eq": "refs at kL/2^n, n = 0,1,2,3",
+        "status": "partially-stored",
+        "role": "The calibration table. Four reference entries at "
+                "exact halvings of the warp factor, plus nine "
+                "perturbation entries.",
+        "how": "The four references (Z, c, d, e) sit at kL, kL/2, kL/4, "
+               "kL/8 with errors 3.94%, 0.16%, 2.68%, 1.52%. The nine "
+               "perturbations do not correlate with any mode property "
+               "(all p > 0.37) and show no hierarchy. They are stored, "
+               "not computed.",
+        "color": "#8E44AD",
+    },
+    {
+        "id": "readout",
+        "label": "READOUT",
+        "subtitle": "N/4 = f(m_f(r))",
+        "eq": "Spearman rho = -0.9972, p ~ 0",
+        "status": "derived",
+        "role": "The output transform. N/4 is a monotone function of "
+                "the processing weight.",
+        "how": "N/4 and m_f(r) carry identical ordering information. "
+               "The processing weight is the primary quantity; N/4 is "
+               "a rescaled readout that maps the weight onto the "
+               "dimensionless shell structure used in the mass formula.",
+        "color": "#2E8B57",
+    },
+]
+
+STATUS_COLOR = {
+    "derived": "#2E8B57",
+    "characterized": "#DAA520",
+    "partially-stored": "#8E44AD",
+}
+
+STATUS_LABEL = {
+    "derived": "DERIVED",
+    "characterized": "CHARACTERIZED",
+    "partially-stored": "PARTIALLY STORED",
+}
+
+# ============================================================
+# BUILD THE PROCESSOR DIAGRAM
+# ============================================================
+
+def build_architecture_figure(highlight=None):
+    fig = go.Figure()
+
+    # Layout: hexagon of components around a central label
+    # Center at (0, 0), components at radius 2.5
+    angles = {
+        "hardware": np.pi / 2,           # top
+        "state": np.pi / 2 - 2*np.pi/6,  # upper right
+        "clock": np.pi / 2 - 4*np.pi/6,  # lower right
+        "function": np.pi / 2 - 6*np.pi/6,  # bottom
+        "database": np.pi / 2 - 8*np.pi/6,  # lower left
+        "readout": np.pi / 2 - 10*np.pi/6,  # upper left
+    }
+    positions = {k: (2.5*np.cos(a), 2.5*np.sin(a))
+                 for k, a in angles.items()}
+
+    # Draw the arrows between components (processor pipeline)
+    pipeline = ["hardware", "state", "clock", "function",
+                "database", "readout", "hardware"]
+    for i in range(len(pipeline) - 1):
+        x0, y0 = positions[pipeline[i]]
+        x1, y1 = positions[pipeline[i+1]]
+        fig.add_trace(go.Scatter(
+            x=[x0, x1], y=[y0, y1],
+            mode="lines",
+            line=dict(color="#BBBBBB", width=2),
+            hoverinfo="none", showlegend=False,
+        ))
+
+    # Draw each component as a node
+    for comp in COMPONENTS:
+        x, y = positions[comp["id"]]
+        is_highlight = (highlight == comp["id"])
+        size = 60 if is_highlight else 45
+        border = 4 if is_highlight else 2
+        fig.add_trace(go.Scatter(
+            x=[x], y=[y],
+            mode="markers+text",
+            marker=dict(
+                size=size,
+                color=STATUS_COLOR[comp["status"]],
+                line=dict(width=border, color="black"),
+            ),
+            text=[comp["label"]],
+            textposition="middle center",
+            textfont=dict(size=10, color="white"),
+            hovertext=(
+                f"<b>{comp['label']}</b><br>"
+                f"<i>{comp['subtitle']}</i><br><br>"
+                f"<b>Status:</b> {STATUS_LABEL[comp['status']]}<br><br>"
+                f"<b>Role:</b> {comp['role']}<br><br>"
+                f"<b>How:</b> {comp['how']}"
+            ),
+            hoverinfo="text",
+            showlegend=False,
+        ))
+
+    # Add the center label
+    fig.add_trace(go.Scatter(
+        x=[0], y=[0],
+        mode="markers+text",
+        marker=dict(size=10, color="white"),
+        text=["<b>WIN</b><br>PROCESSOR"],
+        textposition="middle center",
+        textfont=dict(size=14, color="#222"),
+        hoverinfo="skip",
+        showlegend=False,
+    ))
+
+    # Add the output arrow pointing up
+    fig.add_annotation(
+        x=0, y=1.7, text="<b>OUTPUT</b><br>SM particle spectrum",
+        showarrow=False, font=dict(size=11, color="#555"),
+    )
+
+    # Legend
+    for status in ["derived", "characterized", "partially-stored"]:
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None], mode="markers",
+            marker=dict(size=14, color=STATUS_COLOR[status],
+                        line=dict(width=1, color="black")),
+            name=STATUS_LABEL[status], showlegend=True,
+        ))
+
+    fig.update_layout(
+        title=dict(
+            text="<b>The WIN Vacuum as a Calibration-Based Processor</b><br>"
+                 "<sub>Hover any component for details. "
+                 "Click a component name below to see its full derivation.</sub>",
+            x=0.5, xanchor="center",
+        ),
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.08,
+                    xanchor="center", x=0.5),
+        hovermode="closest",
+        margin=dict(l=20, r=20, t=90, b=60),
+        xaxis=dict(range=[-4, 4], showgrid=False, zeroline=False,
+                   showticklabels=False),
+        yaxis=dict(range=[-4, 4], showgrid=False, zeroline=False,
+                   showticklabels=False, scaleanchor="x", scaleratio=1),
+        plot_bgcolor="white",
+        height=720,
+        dragmode="pan",
+    )
+    return fig
+
+# ============================================================
+# DETAIL PANEL
+# ============================================================
+
+detail = widgets.Output()
+
+def show_component(comp_id):
+    detail.clear_output()
+    if comp_id is None:
+        return
+    comp = next(c for c in COMPONENTS if c["id"] == comp_id)
+    with detail:
+        display(HTML(f"""
+        <div style="border-left:6px solid {comp['color']};
+                    padding:14px 18px; margin:10px 0;
+                    background:#FAFAFA; border-radius:6px;
+                    font-family: -apple-system, system-ui, sans-serif;">
+          <div style="font-size:11px; color:#888; letter-spacing:1px;
+                      text-transform:uppercase;">
+            Component &middot;
+            <span style="color:{comp['color']}; font-weight:bold;">
+              {STATUS_LABEL[comp['status']]}
+            </span>
+          </div>
+          <h2 style="margin:4px 0 6px 0; color:#222;">
+            {comp['label']} &mdash; {comp['subtitle']}
+          </h2>
+          <div style="font-size:15px; font-family: 'Cambria Math', serif;
+                      background:#FFF; padding:10px 14px;
+                      border:1px solid #EEE; border-radius:4px;
+                      display:inline-block; margin-bottom:10px;">
+            {comp['eq']}
+          </div>
+          <p style="font-size:14px; line-height:1.55; color:#333; margin:8px 0;">
+            <b>Role:</b> {comp['role']}
+          </p>
+          <p style="font-size:14px; line-height:1.55; color:#333; margin:8px 0;">
+            <b>How it works:</b> {comp['how']}
+          </p>
+        </div>
+        """))
+
+# ============================================================
+# DROPDOWN + FIGURE WIDGET
+# ============================================================
+
+selected = widgets.Dropdown(
+    options=[("-- select a component --", None)] + [
+        (f"{STATUS_LABEL[c['status']][:1]}  {c['label']} — {c['subtitle']}",
+         c["id"])
+        for c in COMPONENTS
+    ],
+    description="Component:",
+    layout=widgets.Layout(width="560px"),
+)
+
+fig_widget = go.FigureWidget(build_architecture_figure(highlight=None))
+
+def on_change(change):
+    if change["name"] != "value":
+        return
+    comp_id = change["new"]
+    show_component(comp_id)
+    # Rebuild figure with highlight
+    new_fig = build_architecture_figure(highlight=comp_id)
+    fig_widget.data = []
+    for tr in new_fig.data:
+        fig_widget.add_trace(tr)
+    fig_widget.layout = new_fig.layout
+
+selected.observe(on_change)
+
+# ============================================================
+# RENDER
+# ============================================================
+
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:960px; line-height:1.55; color:#222;">
+  <h2 style="margin-bottom:4px;">Widget 16 — The Processor Architecture</h2>
+  <p style="color:#666; margin-top:0;">
+    The WIN vacuum is a <b>calibration-based processor</b>. Six
+    components form the architecture. Three are fully derived
+    (green), one is characterized but underdetermined (yellow),
+    and one is partially stored (purple). The processor's
+    architecture is derived from d = 4. The database's nine
+    perturbation entries are the irreducible empirical content.
+  </p>
+</div>
+"""))
+
+display(selected)
+display(fig_widget)
+display(detail)
+show_component("hardware")
+
+# ============================================================
+# SUMMARY
+# ============================================================
+from collections import Counter
+tally = Counter(c["status"] for c in COMPONENTS)
+display(widgets.HTML(f"""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:960px; margin-top:18px; padding:14px 18px;
+            background:#FAFAFA; border-left:4px solid #666;
+            border-radius:4px; line-height:1.6; color:#333;">
+  <b>Status tally</b><br>
+  <span style="color:#2E8B57; font-weight:bold;">DERIVED</span>: {tally['derived']} components<br>
+  <span style="color:#DAA520; font-weight:bold;">CHARACTERIZED</span>: {tally['characterized']} component<br>
+  <span style="color:#8E44AD; font-weight:bold;">PARTIALLY STORED</span>: {tally['partially-stored']} component<br>
+  <br>
+  <b>The boundary:</b> the processor architecture is derived.
+  The database has four derived reference entries and nine
+  stored perturbation entries. The nine perturbations and the
+  thirteen shape parameters are the irreducible empirical
+  content of the particle spectrum sector.
+</div>
+"""))
+
+print("\nDone. Use the dropdown to explore each component.")
+print("Hover any node in the figure for a quick summary.")
+print("Click a component to highlight it in the diagram.")
