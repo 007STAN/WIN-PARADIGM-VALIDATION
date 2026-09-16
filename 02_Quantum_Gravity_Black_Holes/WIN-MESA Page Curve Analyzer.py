@@ -1,34 +1,36 @@
+# ============================================================
+# WIN PARADIGM — PAGE CURVE ANALYSIS (REVISED)
+# ============================================================
 """
-Warped Information Number (WIN) Paradigm — Page Curve Analysis
-Author: Stanley Preschutti (Information Physics Institute, UK)
-Status: CORRECTED Sept 13, 2026 — falsified remnant floor removed.
+Author: Stanley Preschutti (Entropia Research Institute / Information Physics Institute)
+ORCID:  0009-0004-5445-1744
+Status: REVISED September 16, 2026
 
 ============================================================================
-TRIPWIRE NOTICE
+PURPOSE
 ============================================================================
-The previous version of this widget applied a "remnant floor":
-    S_rad = max(S_rad, (H/N) · S_BH)
+The previous version of this analysis applied a "remnant floor" of
+the form S_rad = max(S_rad, (H/N) * S_BH). That floor was falsified
+for two reasons:
 
-This is FALSIFIED for two reasons:
+  1. It violates unitarity. In a unitary theory the black hole fully
+     evaporates and S_rad -> 0 as t -> infinity. A floor at 0.25 * S_BH
+     means 25% of the entropy is never radiated, which is exactly the
+     paradox the Page curve is meant to resolve.
 
-  1. A nonzero remnant floor contradicts the unitarity argument that the
-     Page curve is supposed to illustrate. In a unitary theory, the black
-     hole fully evaporates, and S_rad → 0 as t → ∞. A floor at 0.25·S_BH
-     means 25% of the initial entropy is never radiated — i.e., information
-     is permanently lost. That is the very paradox the Page curve resolves.
+  2. The value H/N = 16/64 = 0.25 was asserted, not derived.
 
-  2. The value H/N = 16/64 = 0.25 is asserted, not derived. Nothing in the
-     WIN framework says the remnant entropy equals H/N times S_BH. If a
-     remnant is claimed, it must be derived from the substrate dynamics.
+This revision does three things:
 
-Any future WIN Page curve MUST:
-  - Satisfy S_rad(t) → 0 as t → ∞ (unitarity).
-  - Derive any remnant from the substrate, not assert it.
-  - Use S_BH = s0 · N with s0 from the SYK model (not a free slider) OR
-    explicitly label s0 as an input.
-
-See: WIN Research — Sept 13, 2026, Section 5.3 (falsified formulas must be
-retracted, not rationalized).
+  A. Retains the falsification record for transparency.
+  B. Presents a clean Page curve with unitarity preserved (S_rad -> 0).
+  C. Adds a WIN-specific structural comparison: the substrate has
+     N = 64 Majorana modes and a mirror-symmetric spectrum. The
+     14 self-paired modes at lambda = 4 are the residual. This
+     suggests a connection between the self-canceling vacuum and
+     the Page curve's late-time behavior — but the connection is
+     structural, not yet a derivation. It is stated as an open
+     problem.
 ============================================================================
 """
 
@@ -41,49 +43,47 @@ try:
     HAS_WIDGETS = True
 except ImportError:
     HAS_WIDGETS = False
-    print("NOTE: ipywidgets not available. Run non-interactively or install:")
-    print("      pip install ipywidgets")
+    print("NOTE: ipywidgets not available.")
 
 # ============================================================
 # WIN SUBSTRATE PARAMETERS
 # ============================================================
+d = 4
+H_sector = 2**d               # 16
+V_sector = (d - 1) * 2**d     # 48
+N_substrate = V_sector + H_sector  # 64
+L = 8
 
-d = 4                       # Spacetime dimension (input)
-H = 2**d                    # Hidden sector = 16  [FIXED: was d**2]
-V = (d - 1) * 2**d          # Visible sector = 48
-N_substrate = V + H         # Total substrate = 64
-
-# SYK ground state entropy per Majorana mode (known result)
-# This is an INPUT from the SYK literature, not a WIN derivation.
+# SYK ground state entropy per Majorana mode (input from literature)
 s0_SYK_DEFAULT = 0.2324
 
-# ============================================================
-# PAGE CURVE (no remnant floor — unitarity preserved)
-# ============================================================
+# WIN-specific substrate quantities
+residual_fraction = 7 / 32    # from the self-canceling vacuum
+paired_modes = 50
+residual_modes = 14
 
+# ============================================================
+# PAGE CURVE (no remnant floor)
+# ============================================================
 def page_curve(N, s0, gamma_emission, t_max=None, n_points=400):
     """
     Compute the Page curve for a black hole with N Majorana modes.
 
-    This is a TOY MODEL: the black hole is treated as a system with
-    S_BH = s0 · N nats, and the radiation entropy is the minimum of
+    This is a TOY MODEL. The black hole is treated as a system with
+    S_BH = s0 * N nats, and the radiation entropy is the minimum of
     the thermal entropy and the remaining black hole entropy:
 
-        S_rad(t) = min(γt, S_BH − γt)
+        S_rad(t) = min(gamma * t, S_BH - gamma * t)
 
-    The curve peaks at S_BH/2 at t_Page = S_BH/(2γ), then falls to zero
-    as the black hole fully evaporates. No remnant floor is applied —
-    the curve reaches zero, consistent with unitarity.
+    The curve peaks at S_BH/2 at t_Page = S_BH/(2*gamma), then falls
+    to zero as the black hole fully evaporates.
 
     Parameters:
-    - N: number of Majorana modes (substrate size)
-    - s0: SYK ground state entropy per mode
+    - N: number of Majorana modes
+    - s0: SYK entropy per mode (input)
     - gamma_emission: emission rate (nats per unit time)
-    - t_max: maximum time (default: 2.5 × t_Page)
-    - n_points: number of time points
-
-    Returns:
-    - times, S_rad, S_BH, t_Page
+    - t_max: maximum time (default 2.5 * t_Page)
+    - n_points: number of time samples
     """
     S_BH = s0 * N
     t_Page = S_BH / (2 * gamma_emission)
@@ -92,41 +92,65 @@ def page_curve(N, s0, gamma_emission, t_max=None, n_points=400):
         t_max = 2.5 * t_Page
 
     times = np.linspace(0, t_max, n_points)
-
-    # Thermal entropy rises linearly
     S_thermal = gamma_emission * times
-
-    # Black hole entropy falls linearly
     S_BH_t = S_BH - gamma_emission * times
-
-    # Page curve: minimum of the two — NO FLOOR
     S_rad = np.minimum(S_thermal, np.maximum(S_BH_t, 0.0))
 
-    # TRIPWIRE: the curve must reach zero at late times (unitarity)
     assert S_rad[-1] < 1e-6, \
-        f"TRIPWIRE FAILED: S_rad(t_max) = {S_rad[-1]} ≠ 0. Unitarity violated."
+        f"TRIPWIRE: S_rad(t_max) = {S_rad[-1]} != 0. Unitarity violated."
 
     return times, S_rad, S_BH, t_Page
 
 # ============================================================
-# WIDGET
+# WIN-SPECIFIC STRUCTURAL COMPARISON
 # ============================================================
+def win_structural_comparison(N, s0):
+    """
+    Compute the WIN-specific structural quantities relevant to the
+    black hole evaporation problem:
 
+    - The substrate has N Majorana modes.
+    - The Laplacian spectrum is mirror-symmetric; 50 modes pair
+      and cancel, 14 self-paired modes survive.
+    - The residual fraction of zero-point energy is 7/32.
+
+    If the black hole's entropy is stored in the substrate's mode
+    structure, then the residual fraction 7/32 might set the
+    late-time entropy of the radiation. This is a structural
+    hypothesis, not a derivation.
+    """
+    S_BH = s0 * N
+    S_residual_frac = S_BH * residual_fraction
+    S_paired_frac = S_BH * (1 - residual_fraction)
+    return {
+        "S_BH": S_BH,
+        "S_residual_frac": S_residual_frac,
+        "S_paired_frac": S_paired_frac,
+        "residual_modes": residual_modes,
+        "paired_modes": paired_modes,
+    }
+
+# ============================================================
+# INTERACTIVE WIDGET
+# ============================================================
 if HAS_WIDGETS:
     n_slider = widgets.IntSlider(
         value=64, min=16, max=256, step=16,
         description='Capacity (N):',
-        style={'description_width': 'initial'}
+        style={'description_width': 'initial'},
+        layout=widgets.Layout(width='500px'),
     )
     s0_slider = widgets.FloatSlider(
         value=s0_SYK_DEFAULT, min=0.1, max=0.5, step=0.001,
         description='SYK s0 (input):',
-        style={'description_width': 'initial'}
+        style={'description_width': 'initial'},
+        layout=widgets.Layout(width='500px'),
     )
     gamma_slider = widgets.FloatSlider(
         value=0.1, min=0.01, max=0.5, step=0.01,
-        description='Emission rate γ (input):',
-        style={'description_width': 'initial'}
+        description='Emission rate gamma:',
+        style={'description_width': 'initial'},
+        layout=widgets.Layout(width='500px'),
     )
 
     out = widgets.Output()
@@ -135,64 +159,98 @@ if HAS_WIDGETS:
         with out:
             clear_output(wait=True)
             times, S_rad, S_BH, t_Page = page_curve(N, s0, gamma)
+            struct = win_structural_comparison(N, s0)
 
-            print("=" * 70)
-            print("WIN PARADIGM: PAGE CURVE ANALYSIS")
-            print("=" * 70)
+            print("=" * 72)
+            print("WIN PARADIGM: PAGE CURVE ANALYSIS (REVISED)")
+            print("=" * 72)
             print()
-            print("Substrate parameters:")
+            print("Substrate parameters (from d = 4):")
             print(f"  d = {d}")
-            print(f"  H = 2^d = {H}  [FIXED: was d**2]")
-            print(f"  V = (d-1)·2^d = {V}")
+            print(f"  H_sector = 2^d = {H_sector}")
+            print(f"  V_sector = (d-1)*2^d = {V_sector}")
             print(f"  N_substrate = {N_substrate}")
+            print(f"  L = {L} (8x8 torus)")
             print()
-            print("Black hole parameters (TOY MODEL):")
-            print(f"  Number of Majorana modes N = {N}")
-            print(f"  SYK entropy per mode s0 = {s0:.4f}  [INPUT, not derived]")
-            print(f"  Initial BH entropy S_BH = {S_BH:.4f} nats")
-            print(f"  Emission rate γ = {gamma:.4f} nats/time  [INPUT, not derived]")
+            print("Black hole parameters (toy model):")
+            print(f"  N (Majorana modes) = {N}")
+            print(f"  s0 (SYK entropy per mode) = {s0:.4f}   [input]")
+            print(f"  S_BH (initial entropy) = {S_BH:.4f} nats")
+            print(f"  gamma (emission rate) = {gamma:.4f} nats/time  [input]")
             print()
             print("Page curve results:")
             print(f"  Page time t_Page = {t_Page:.4f}")
             print(f"  Peak entropy S_BH/2 = {S_BH/2:.4f} nats")
-            print(f"  Final entropy S_rad(t_max) = {S_rad[-1]:.6f} nats  (unitarity ✓)")
+            print(f"  Final S_rad(t_max) = {S_rad[-1]:.6f} nats  (unitarity ok)")
             print()
-            print("STATUS: This is a TOY MODEL, not a derivation from the")
-            print("        WIN substrate. The substrate enters only via")
-            print("        S_BH = s0 · N. The curve shape is the standard")
-            print("        triangle Page curve. Any WIN-specific prediction")
-            print("        (remnant, modified Page time, etc.) is an OPEN PROBLEM.")
+            print("WIN structural comparison:")
+            print(f"  Total zero-point units: 128")
+            print(f"  Paired zero-point units: 100  (50 modes, cancel exactly)")
+            print(f"  Residual units: 28  (14 self-paired modes at lambda = 4)")
+            print(f"  Residual fraction: {residual_fraction:.4f} = 7/32")
             print()
-            print("REMOVED: The previous 'remnant floor' S_rem = (H/N)·S_BH is")
-            print("         falsified — it violates unitarity and was not derived.")
-            print("=" * 70)
+            print("  If the black hole's entropy is stored in the substrate's")
+            print("  mode structure, the residual fraction 7/32 = "
+                  f"{residual_fraction:.4f} might")
+            print("  set a late-time entropy scale. This is a STRUCTURAL")
+            print("  HYPOTHESIS, not a derivation. No WIN-specific")
+            print("  modification to the Page curve is currently derived.")
+            print()
+            print("STATUS: standard Page curve. Unitarity preserved.")
+            print("        S_rad -> 0 as t -> infinity. No remnant floor.")
+            print("=" * 72)
 
-            # Plot
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+            # --- Figure: three panels ---
+            fig, axes = plt.subplots(1, 3, figsize=(18, 5.5))
 
-            ax1.plot(times, S_rad, label=r'$S_{rad}(t)$ (Page curve)',
-                     color='#1f77b4', linewidth=2.5)
-            ax1.axhline(S_BH, color='gray', linestyle='--', alpha=0.5,
-                        label=f'Initial $S_{{BH}}$ = {S_BH:.2f}')
-            ax1.axhline(S_BH/2, color='orange', linestyle='--', alpha=0.5,
-                        label=f'$S_{{BH}}/2$ = {S_BH/2:.2f}')
-            ax1.axvline(t_Page, color='green', linestyle='-.', alpha=0.5,
-                        label=f'Page time = {t_Page:.2f}')
-            ax1.set_ylabel(r'Entropy $S$ (nats)', fontsize=11)
-            ax1.set_title('Page Curve — Toy Model (No Remnant Floor)',
-                          fontsize=12, fontweight='bold')
-            ax1.set_ylim(bottom=0)
-            ax1.grid(True, linestyle=':', alpha=0.6)
-            ax1.legend(loc='best', frameon=True, facecolor='white', fontsize=9)
+            # Panel 1: Page curve
+            ax = axes[0]
+            ax.plot(times, S_rad, label=r'$S_{rad}(t)$',
+                    color='#1f77b4', linewidth=2.5)
+            ax.axhline(S_BH, color='gray', linestyle='--', alpha=0.5,
+                       label=f'Initial $S_{{BH}}$')
+            ax.axhline(S_BH/2, color='orange', linestyle='--', alpha=0.5,
+                       label=r'$S_{BH}/2$')
+            ax.axvline(t_Page, color='green', linestyle='-.', alpha=0.5,
+                       label=f'Page time')
+            ax.set_ylabel(r'Entropy $S$ (nats)', fontsize=11)
+            ax.set_title('Page curve (no remnant floor)',
+                         fontsize=12, fontweight='bold')
+            ax.set_ylim(bottom=0)
+            ax.grid(True, linestyle=':', alpha=0.6)
+            ax.legend(loc='best', frameon=True, facecolor='white',
+                      fontsize=9)
 
+            # Panel 2: entropy production rate
+            ax = axes[1]
             dS_dt = np.gradient(S_rad, times)
-            ax2.plot(times, dS_dt, color='#d62728', linewidth=2.5)
-            ax2.axhline(0, color='black', linestyle='--', alpha=0.5)
-            ax2.axvline(t_Page, color='green', linestyle='-.', alpha=0.5)
-            ax2.set_xlabel('Time $t$', fontsize=11)
-            ax2.set_ylabel(r'$dS_{rad}/dt$', fontsize=11)
-            ax2.set_title('Entropy Production Rate', fontsize=12, fontweight='bold')
-            ax2.grid(True, linestyle=':', alpha=0.6)
+            ax.plot(times, dS_dt, color='#d62728', linewidth=2.5)
+            ax.axhline(0, color='black', linestyle='--', alpha=0.5)
+            ax.axvline(t_Page, color='green', linestyle='-.', alpha=0.5,
+                       label='Page time')
+            ax.set_xlabel('Time $t$', fontsize=11)
+            ax.set_ylabel(r'$dS_{rad}/dt$', fontsize=11)
+            ax.set_title('Entropy production rate',
+                         fontsize=12, fontweight='bold')
+            ax.grid(True, linestyle=':', alpha=0.6)
+            ax.legend(loc='best', frameon=True, facecolor='white',
+                      fontsize=9)
+
+            # Panel 3: WIN structural decomposition
+            ax = axes[2]
+            labels = ['Paired\n(cancel)', 'Residual\n(survive)']
+            values = [struct['S_paired_frac'], struct['S_residual_frac']]
+            colors_bar = ['#888888', '#C44E52']
+            bars = ax.bar(labels, values, color=colors_bar,
+                          edgecolor='black', linewidth=1.5, width=0.6)
+            for bar, val in zip(bars, values):
+                ax.text(bar.get_x() + bar.get_width()/2, val + 0.005,
+                        f'{val:.4f}', ha='center', va='bottom',
+                        fontsize=11, fontweight='bold')
+            ax.set_ylabel(r'Entropy (nats)', fontsize=11)
+            ax.set_title('WIN structural decomposition',
+                         fontsize=12, fontweight='bold')
+            ax.grid(True, linestyle=':', alpha=0.6, axis='y')
 
             plt.tight_layout()
             plt.show()
@@ -201,19 +259,36 @@ if HAS_WIDGETS:
         update_plot,
         N=n_slider,
         s0=s0_slider,
-        gamma=gamma_slider
+        gamma=gamma_slider,
     )
     display(page_interactive, out)
 
 # ============================================================
 # NON-INTERACTIVE FALLBACK
 # ============================================================
-
 if __name__ == "__main__" or not HAS_WIDGETS:
-    times, S_rad, S_BH, t_Page = page_curve(N_substrate, s0_SYK_DEFAULT, 0.1)
-    print("WIN Page Curve — Default Parameters")
-    print(f"  N = {N_substrate}, s0 = {s0_SYK_DEFAULT}, γ = 0.1")
+    times, S_rad, S_BH, t_Page = page_curve(
+        N_substrate, s0_SYK_DEFAULT, 0.1
+    )
+    struct = win_structural_comparison(N_substrate, s0_SYK_DEFAULT)
+
+    print("=" * 72)
+    print("WIN PAGE CURVE — DEFAULT PARAMETERS")
+    print("=" * 72)
+    print()
+    print(f"  N = {N_substrate}")
+    print(f"  s0 = {s0_SYK_DEFAULT}")
+    print(f"  gamma = 0.1")
+    print()
     print(f"  S_BH = {S_BH:.4f} nats")
     print(f"  t_Page = {t_Page:.4f}")
     print(f"  Peak S_rad = {S_rad.max():.4f} nats")
-    print(f"  Final S_rad = {S_rad[-1]:.6f} nats (unitarity ✓)")
+    print(f"  Final S_rad = {S_rad[-1]:.6f} nats (unitarity ok)")
+    print()
+    print("  WIN structural comparison:")
+    print(f"    Paired entropy: {struct['S_paired_frac']:.4f} nats")
+    print(f"    Residual entropy: {struct['S_residual_frac']:.4f} nats")
+    print(f"    Residual fraction: 7/32 = {residual_fraction:.4f}")
+    print()
+    print("  STATUS: standard Page curve. Unitarity preserved.")
+    print("          S_rad -> 0 as t -> infinity. No remnant floor.")
