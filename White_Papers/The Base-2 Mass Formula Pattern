@@ -571,3 +571,12 @@ for n in range(0, 4):
 Copyright © 2026 Stanley Preschutti. All Rights Reserved.
 Open for independent verification and peer review.
 
+```bibtex
+@misc{preschutti2026win,
+  title  = {Warped Information Number (WIN) Paradigm: A Dimensional-Reduction Framework Deriving the Standard Model from the Spacetime Dimension},
+  author = {Preschutti, Stanley},
+  year   = {2026},
+  note   = {Preprint, under independent verification},
+  url    = {https://github.com/007STAN/WIN-PARADIGM-VALIDATION}
+
+
