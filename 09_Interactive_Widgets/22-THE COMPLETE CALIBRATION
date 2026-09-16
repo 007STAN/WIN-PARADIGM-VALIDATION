@@ -1,0 +1,311 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 22: THE COMPLETE CALIBRATION
+# ============================================================
+!pip install -q ipywidgets plotly numpy
+
+from google.colab import output
+output.enable_custom_widget_manager()
+
+import numpy as np
+import ipywidgets as widgets
+from IPython.display import display, HTML
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+pio.renderers.default = "colab"
+
+d = 4
+N = d * 2**d
+H = 2**d
+V = (d - 1) * 2**d
+L = 8
+kL = 38.442527
+
+SECTORS = [
+    {"id": "gauge", "label": "Gauge group", "derived": True,
+     "input_count": 0, "note": "SO(10) from p(4) = 5"},
+    {"id": "generations", "label": "Generation count", "derived": True,
+     "input_count": 0, "note": "d - 1 = 3"},
+    {"id": "cosmology", "label": "Cosmological cancellation",
+     "derived": True, "input_count": 0,
+     "note": "mirror symmetry, 7/32"},
+    {"id": "warp", "label": "Warp factor kL", "derived": True,
+     "input_count": 1, "note": "kL = 38.442527"},
+    {"id": "higgs", "label": "Higgs mass", "derived": True,
+     "input_count": 0, "note": "125.138 GeV"},
+    {"id": "weinberg", "label": "Weinberg angle", "derived": True,
+     "input_count": 0, "note": "0.23135"},
+    {"id": "dark", "label": "Dark sector", "derived": True,
+     "input_count": 0, "note": "epsilon = 2025/1697500"},
+    {"id": "spectrum", "label": "Particle spectrum", "derived": False,
+     "input_count": 22, "note": "4 refs + 9 perts + 13 shapes"},
+]
+
+total_inputs = sum(s["input_count"] for s in SECTORS)
+
+# ---------- Build a FigureWidget once ----------
+def build_figure_widget():
+    fig = make_subplots(
+        rows=2, cols=2,
+        column_widths=[0.55, 0.45],
+        row_heights=[0.55, 0.45],
+        subplot_titles=(
+            "Eight sectors: empirical input count",
+            "Total empirical inputs: WIN vs SM",
+            "Processor summary",
+            "Boundary",
+        ),
+        specs=[[{"type": "xy"}, {"type": "xy"}],
+               [{"type": "xy"}, {"type": "xy"}]],
+        horizontal_spacing=0.14,
+        vertical_spacing=0.18,
+    )
+
+    labels = [s["label"] for s in SECTORS]
+    inputs = [s["input_count"] for s in SECTORS]
+    colors = ["#2E8B57" if s["derived"] else "#8E44AD" for s in SECTORS]
+
+    # Bar chart 1: sectors
+    fig.add_trace(go.Bar(
+        y=labels, x=inputs, orientation="h",
+        marker=dict(color=colors, line=dict(width=1, color="#333")),
+        text=[str(i) for i in inputs], textposition="outside",
+        hoverinfo="skip", showlegend=False,
+    ), row=1, col=1)
+
+    # Bar chart 2: comparison
+    fig.add_trace(go.Bar(
+        x=["Standard Model", "WIN Paradigm"],
+        y=[26, total_inputs],
+        marker=dict(color=["#888888", "#2E8B57"],
+                    line=dict(width=1, color="#333")),
+        text=[str(26), str(total_inputs)], textposition="outside",
+        hoverinfo="skip", showlegend=False,
+    ), row=1, col=2)
+
+    # Text annotations on bottom-left (processor summary)
+    summary_lines = [
+        ("HARDWARE", "8x8 torus", "derived", "#2E8B57"),
+        ("STATE", "14 modes", "derived", "#2E8B57"),
+        ("CLOCK", "Wick rotation", "characterized", "#DAA520"),
+        ("FUNCTION", "m_f(r)", "derived", "#2E8B57"),
+        ("DATABASE", "4 refs + 9 perts", "stored", "#8E44AD"),
+        ("READOUT", "N/4 = f(m_f)", "derived", "#2E8B57"),
+    ]
+    y_positions = np.linspace(0.9, 0.1, len(summary_lines))
+    for (comp, desc, status, color), y in zip(summary_lines, y_positions):
+        fig.add_annotation(
+            x=0.02, y=y, xref="x3 domain", yref="y3 domain",
+            text=f"<b>{comp}</b>", showarrow=False, align="left",
+            font=dict(size=13, color=color))
+        fig.add_annotation(
+            x=0.35, y=y, xref="x3 domain", yref="y3 domain",
+            text=desc, showarrow=False, align="left",
+            font=dict(size=12, color="#333"))
+        fig.add_annotation(
+            x=0.98, y=y, xref="x3 domain", yref="y3 domain",
+            text=status, showarrow=False, align="right",
+            font=dict(size=11, color=color))
+
+    # Boundary text
+    boundary_text = (
+        "<b>DERIVED (7 of 8 sectors)</b><br>"
+        "  8x8 torus, 14-mode multiplet<br>"
+        "  Gauge group SO(10)<br>"
+        "  Generation count 3<br>"
+        "  Mirror symmetry, 7/32 residual<br>"
+        "  kL, Higgs mass, Weinberg angle<br>"
+        "  Kinetic mixing epsilon<br>"
+        "  Four references at kL/2^n<br>"
+        "  Processing function m_f(r)<br>"
+        "<br>"
+        "<b>STORED (particle spectrum)</b><br>"
+        "  9 perturbation values<br>"
+        "  13 shape parameters<br>"
+        "  22 total empirical inputs<br>"
+        "  vs SM's 26 parameters"
+    )
+    fig.add_annotation(
+        x=0.05, y=0.95, xref="x4 domain", yref="y4 domain",
+        text=boundary_text, showarrow=False, align="left",
+        font=dict(size=11, color="#333"),
+        bgcolor="white", bordercolor="#888", borderwidth=1)
+
+    fig.update_xaxes(title_text="empirical inputs", row=1, col=1)
+    fig.update_yaxes(showgrid=False, row=1, col=1)
+    fig.update_xaxes(showgrid=False, row=1, col=2)
+    fig.update_yaxes(title_text="parameter count", range=[0, 32],
+                     row=1, col=2)
+    fig.update_xaxes(visible=False, row=2, col=1)
+    fig.update_yaxes(visible=False, row=2, col=1)
+    fig.update_xaxes(visible=False, row=2, col=2)
+    fig.update_yaxes(visible=False, row=2, col=2)
+
+    fig.update_layout(
+        title=dict(
+            text="<b>The Complete Calibration</b><br>"
+                 "<sub>Seven of eight sectors fully derived. "
+                 "Particle spectrum: 4 references + 9 stored "
+                 "perturbations. Total empirical input: 22 numbers.</sub>",
+            x=0.5, xanchor="center"),
+        height=800,
+        margin=dict(l=60, r=40, t=100, b=60),
+        plot_bgcolor="white",
+        showlegend=False,
+        hovermode="closest",
+        bargap=0.15,
+    )
+    return fig
+
+fig_widget = go.FigureWidget(build_figure_widget())
+
+# ---------- Dropdown with in-place color update ----------
+dropdown = widgets.Dropdown(
+    options=[("-- none --", None)] +
+            [(s["label"], s["id"]) for s in SECTORS],
+    description="Highlight:",
+    layout=widgets.Layout(width="340px"),
+)
+
+def update_highlight(change):
+    hid = change["new"]
+    new_colors = []
+    for s in SECTORS:
+        if hid is not None and s["id"] == hid:
+            new_colors.append("#DD8452")
+        elif s["derived"]:
+            new_colors.append("#2E8B57")
+        else:
+            new_colors.append("#8E44AD")
+    # In-place update of the first bar trace
+    fig_widget.data[0].marker.color = tuple(new_colors)
+
+dropdown.observe(update_highlight, names="value")
+
+# ---------- Render ----------
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1100px; line-height:1.55; color:#222;">
+  <h2 style="margin-bottom:4px;">Widget 22 — The Complete Calibration</h2>
+  <p style="color:#666; margin-top:0;">
+    Seven of eight sectors of the WIN Paradigm are fully derived
+    (green). The particle spectrum sector has four derived
+    references and nine stored perturbations (purple). Total
+    empirical input: 22 numbers, versus the Standard Model's 26.
+    Use the dropdown to highlight a sector.
+  </p>
+</div>
+"""))
+
+display(widgets.HBox([dropdown]))
+display(fig_widget)
+
+# ---------- Sector detail table ----------
+rows_html = ""
+for s in SECTORS:
+    color = "#2E8B57" if s["derived"] else "#8E44AD"
+    status = "DERIVED" if s["derived"] else "PARTIALLY STORED"
+    row_bg = "#F8FFF8" if s["derived"] else "#F8F0FF"
+    rows_html += f"""
+    <tr style="background:{row_bg};">
+      <td style="padding:8px 12px; border-bottom:1px solid #EEE;">
+        <b>{s['label']}</b></td>
+      <td style="padding:8px 12px; border-bottom:1px solid #EEE;
+                 color:{color}; font-weight:bold;">{status}</td>
+      <td style="padding:8px 12px; border-bottom:1px solid #EEE;
+                 text-align:center;">{s['input_count']}</td>
+      <td style="padding:8px 12px; border-bottom:1px solid #EEE;
+                 font-size:12px; color:#555;">{s['note']}</td>
+    </tr>"""
+
+display(widgets.HTML(f"""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1200px; margin-top:24px; padding:14px 18px;
+            background:#FAFAFA; border-radius:4px;
+            border-left:4px solid #333;">
+  <b>Sector detail</b>
+  <table style="border-collapse:collapse; margin-top:10px;
+                font-size:13px; width:100%;">
+    <tr style="background:#EEE;">
+      <th style="padding:8px 12px; text-align:left;">Sector</th>
+      <th style="padding:8px 12px; text-align:left;">Status</th>
+      <th style="padding:8px 12px; text-align:center;">Inputs</th>
+      <th style="padding:8px 12px; text-align:left;">Note</th>
+    </tr>
+    {rows_html}
+    <tr style="background:#FFF; font-weight:bold;">
+      <td style="padding:8px 12px;">TOTAL</td>
+      <td style="padding:8px 12px;"></td>
+      <td style="padding:8px 12px; text-align:center;">{total_inputs}</td>
+      <td style="padding:8px 12px;">vs SM's 26 parameters</td>
+    </tr>
+  </table>
+</div>
+"""))
+
+# ---------- Final claim ----------
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1200px; margin-top:24px; padding:20px 24px;
+            background:#FFF; border:3px solid #333;
+            border-radius:8px; line-height:1.7; color:#222;">
+  <h2 style="margin-top:0; color:#333;">
+    The WIN Paradigm: The Complete State
+  </h2>
+  <p style="font-size:15px;">
+    <b>The vacuum is a calibration-based processor.</b> Its
+    architecture is fully derived from the spacetime dimension
+    d = 4, itself derived from the photon's two helicity states.
+  </p>
+  <p style="font-size:15px;">
+    <b>Seven of eight sectors are fully derived.</b> The gauge
+    group SO(10), the generation count, the cosmological
+    cancellation, the warp factor kL, the Higgs mass, the Weinberg
+    angle, and the dark sector all follow from the processor's
+    geometry by arithmetic and standard formulas.
+  </p>
+  <p style="font-size:15px;">
+    <b>The particle spectrum is the one sector with stored data.</b>
+    Its architecture is derived: four reference entries (Z, c, d, e)
+    at exact halvings of kL, a crossover at kL, and a charge
+    balance of -5/3 (inputs) and +2/3 (outputs). Nine perturbation
+    values and thirteen shape parameters are stored. They do not
+    correlate with any mode property (all p &gt; 0.37) and have
+    no hierarchy.
+  </p>
+  <p style="font-size:15px;">
+    <b>Total empirical input: 22 numbers</b> — less than the
+    Standard Model's 26 parameters, and structured as nine
+    perturbations around four derived references, plus thirteen
+    shape parameters.
+  </p>
+  <p style="font-size:15px;">
+    <b>The claim:</b> WIN derives the processor and its
+    calibration architecture, and takes the nine perturbation
+    values and thirteen shape parameters as input. This is the
+    same kind of boundary the Standard Model has. WIN's empirical
+    input is smaller and more structured than the SM's.
+  </p>
+</div>
+"""))
+
+# ---------- Widget list ----------
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1200px; margin-top:24px; padding:14px 18px;
+            background:#FAFAFA; border-left:4px solid #4C72B0;
+            border-radius:4px;">
+  <b>Widgets in this series</b>
+  <ul style="line-height:1.8; margin-top:8px;">
+    <li><b>16 — Processor Architecture:</b> six components</li>
+    <li><b>17 — Processing Function and References:</b> base-2 pattern</li>
+    <li><b>18 — Crossover and Charge Balance:</b> input/output split</li>
+    <li><b>19 — The Database:</b> 14 entries with all properties</li>
+    <li><b>20 — Perturbation Irreducibility:</b> statistical tests</li>
+    <li><b>21 — Mesh Synchronization:</b> Kuramoto animation</li>
+    <li><b>22 — The Complete Calibration:</b> this widget</li>
+  </ul>
+</div>
+"""))
+
+print("Done.")
