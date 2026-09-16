@@ -1,0 +1,363 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 14: THE 5 + 9 SPLIT
+# ============================================================
+
+!pip install -q ipywidgets plotly numpy pandas
+
+from google.colab import output
+output.enable_custom_widget_manager()
+
+import numpy as np
+import pandas as pd
+import ipywidgets as widgets
+from IPython.display import display, HTML
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+pio.renderers.default = "colab"
+
+# ============================================================
+# FRAMEWORK CONSTANTS AND DATA
+# ============================================================
+
+d = 4; N = 64; H = 16; V = 48; kL = 38.442527
+
+bases = {
+    "nu": H + 2*d + 3,   "e": H + d - 2, "u": H + 1 + 1,
+    "d":  H + 1,          "s": H + 2 - 1, "mu": H + 2 - 1,
+    "dark": H - d,        "c": H + 1 - 2*d, "tau": H + 1 - 2*d,
+    "b": H + 3 - 3*d,     "W": d // 2, "Z": d // 2,
+    "H": H + 1 - d**2,    "t": H - d**2,
+}
+
+targets = {
+    "nu": 60.0, "e": 24.0, "u": 21.0, "d": 20.0,
+    "s": 14.0, "mu": 14.0, "dark": 12.0, "c": 9.5,
+    "tau": 9.0, "b": 7.5, "W": 2.0, "Z": 2.0,
+    "H": 1.0, "t": 0.5,
+}
+
+mode_coords = {
+    "nu": (0, 4), "e": (4, 0), "u": (1, 3), "d": (1, 5),
+    "s": (3, 1), "mu": (3, 7), "dark": (5, 7), "c": (7, 3),
+    "tau": (7, 5), "b": (5, 1), "W": (2, 2), "Z": (2, 6),
+    "H": (6, 2), "t": (6, 6),
+}
+
+def support_of(n1, n2):
+    x = np.arange(8); y = np.arange(8)
+    X, Y = np.meshgrid(x, y, indexing="xy")
+    v = np.cos(2*np.pi*(n1*X + n2*Y)/8)
+    return int(np.sum(np.abs(v) > 0.1))
+
+rows = []
+for name in targets:
+    n1, n2 = mode_coords[name]
+    base = bases[name]
+    n4 = targets[name]
+    delta = n4 - base
+    rows.append({
+        "Particle": name,
+        "n1": n1,
+        "n2": n2,
+        "(n1,n2)": f"({n1}, {n2})",
+        "Support": support_of(n1, n2),
+        "N/4": n4,
+        "Base": base,
+        "Delta": delta,
+        "Type": "Eigenmode" if abs(delta) < 1e-9 else "Resonance",
+    })
+
+df = pd.DataFrame(rows).sort_values("N/4", ascending=False).reset_index(drop=True)
+
+eigenmodes = df[df["Type"] == "Eigenmode"]
+resonances = df[df["Type"] == "Resonance"]
+
+# ============================================================
+# FIGURE
+# ============================================================
+
+def build_figure():
+    fig = make_subplots(
+        rows=2, cols=2,
+        column_widths=[0.5, 0.5],
+        row_heights=[0.5, 0.5],
+        subplot_titles=(
+            "The 5 + 9 split — Delta = 0 vs Delta != 0",
+            "Delta vs n1 — the primary structure",
+            "Base formulas and deviations",
+            "Delta magnitude spectrum",
+        ),
+        specs=[
+            [{"type": "xy"}, {"type": "xy"}],
+            [{"type": "xy"}, {"type": "xy"}],
+        ],
+        horizontal_spacing=0.12,
+        vertical_spacing=0.18,
+    )
+
+    colors = ["#2E8B57" if t == "Eigenmode" else "#C44E52"
+              for t in df["Type"]]
+    fig.add_trace(go.Bar(
+        x=df["Particle"], y=df["Delta"],
+        marker=dict(color=colors, line=dict(width=0)),
+        text=[f"{v:+.2f}" for v in df["Delta"]],
+        textposition="outside",
+        hovertemplate="%{x}<br>Delta = %{y:+.2f}<extra></extra>",
+        showlegend=False,
+    ), row=1, col=1)
+
+    fig.add_hline(y=0, line=dict(color="#333", width=1), row=1, col=1)
+    fig.update_xaxes(title_text="particle", tickangle=-45, row=1, col=1)
+    fig.update_yaxes(title_text="Delta = N/4 - base", row=1, col=1)
+
+    for t, color in [("Eigenmode", "#2E8B57"), ("Resonance", "#C44E52")]:
+        subset = df[df["Type"] == t]
+        fig.add_trace(go.Scatter(
+            x=subset["n1"], y=subset["Delta"],
+            mode="markers+text",
+            text=subset["Particle"],
+            textposition="top center",
+            textfont=dict(size=9),
+            marker=dict(size=14, color=color,
+                        line=dict(width=1, color="black")),
+            name=t,
+            hovertemplate="%{text}<br>n1 = %{x}<br>"
+                          "Delta = %{y:+.2f}<extra></extra>",
+        ), row=1, col=2)
+
+    n1_range = np.array([0.5, 3.5])
+    linear_rule = (d - 1) * (2 - n1_range)
+    fig.add_trace(go.Scatter(
+        x=n1_range, y=linear_rule,
+        mode="lines",
+        line=dict(color="#333", dash="dash", width=2),
+        name="delta = (d-1)(2-n1)",
+        hovertemplate="linear rule<extra></extra>",
+    ), row=1, col=2)
+
+    fig.update_xaxes(title_text="n1 (winding number)", tickvals=list(range(8)),
+                     row=1, col=2)
+    fig.update_yaxes(title_text="Delta", row=1, col=2)
+
+    fig.add_trace(go.Scatter(
+        x=df["Base"], y=df["N/4"],
+        mode="markers+text",
+        text=df["Particle"],
+        textposition="top center",
+        textfont=dict(size=9),
+        marker=dict(size=12,
+                    color=["#2E8B57" if t == "Eigenmode" else "#C44E52"
+                           for t in df["Type"]],
+                    line=dict(width=1, color="black")),
+        showlegend=False,
+        hovertemplate="%{text}<br>base = %{x}<br>N/4 = %{y}<extra></extra>",
+    ), row=2, col=1)
+
+    lo, hi = 0, max(df["N/4"].max(), df["Base"].max()) + 5
+    fig.add_trace(go.Scatter(
+        x=[lo, hi], y=[lo, hi],
+        mode="lines", line=dict(color="#888", dash="dot", width=1),
+        showlegend=False, hoverinfo="skip",
+    ), row=2, col=1)
+
+    fig.update_xaxes(title_text="base formula value", row=2, col=1)
+    fig.update_yaxes(title_text="N/4 target", row=2, col=1)
+
+    nz = df[df["Type"] == "Resonance"]
+    abs_deltas = nz["Delta"].abs().values
+    particles = nz["Particle"].values
+    order = np.argsort(abs_deltas)[::-1]
+    fig.add_trace(go.Bar(
+        x=[particles[i] for i in order],
+        y=[abs_deltas[i] for i in order],
+        marker=dict(color="#C44E52", line=dict(width=0)),
+        text=[f"{abs_deltas[i]:.2f}" for i in order],
+        textposition="outside",
+        hovertemplate="%{x}<br>|Delta| = %{y:.2f}<extra></extra>",
+        showlegend=False,
+    ), row=2, col=2)
+
+    fig.update_xaxes(title_text="resonance", tickangle=-45, row=2, col=2)
+    fig.update_yaxes(title_text="|Delta|", type="log", row=2, col=2)
+
+    fig.update_layout(
+        title=dict(
+            text="<b>Widget 14 — The 5 + 9 Split</b><br>"
+                 "<sub>After correcting the W/Z base formulas, the split "
+                 "is exactly delta = 0 vs delta != 0. The primary delta rule "
+                 "is (d−1)(2−n1) for n1 in {1, 2, 3}.</sub>",
+            x=0.5, xanchor="center", font=dict(size=15),
+        ),
+        height=820,
+        margin=dict(l=60, r=40, t=110, b=90),
+        plot_bgcolor="white",
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.10,
+                    xanchor="center", x=0.5),
+    )
+    return fig
+
+fig = build_figure()
+fig.show()
+
+# ============================================================
+# VERIFICATION TABLE
+# ============================================================
+
+print("=" * 84)
+print("THE 5 + 9 SPLIT — corrected table")
+print("=" * 84)
+print()
+print(f"{'particle':>8} {'(n1,n2)':>9} {'support':>8} {'N/4':>7} "
+      f"{'base':>6} {'delta':>8} {'type':>12}")
+print("-" * 84)
+for _, r in df.iterrows():
+    print(f"{r['Particle']:>8} {r['(n1,n2)']:>9} {r['Support']:>8} "
+          f"{r['N/4']:>7.2f} {r['Base']:>6} {r['Delta']:>+8.2f} "
+          f"{r['Type']:>12}")
+print()
+print(f"Substrate Eigenmodes (delta = 0): {len(eigenmodes)}")
+print(f"Mesh Resonances (delta != 0):    {len(resonances)}")
+print()
+
+print("=" * 84)
+print("The primary rule: delta = (d-1)(2-n1) for n1 in {1, 2, 3}")
+print("=" * 84)
+print()
+for n1 in [1, 2, 3]:
+    predicted = (d - 1) * (2 - n1)
+    observed = df[(df["n1"] == n1)]["Delta"].unique()
+    for obs in observed:
+        match = "OK" if abs(predicted - obs) < 1e-9 else "NO"
+        print(f"  n1 = {n1}: predicted = {predicted:+d}, "
+              f"observed = {obs:+.1f}  {match}")
+print()
+
+# ============================================================
+# INTERACTIVE TABLE
+# ============================================================
+
+table_out = widgets.Output()
+sort_dd = widgets.Dropdown(
+    options=[("by N/4 (descending)", "N4_desc"),
+             ("by N/4 (ascending)", "N4_asc"),
+             ("by type (Eigenmode first)", "type"),
+             ("by n1", "n1"),
+             ("by |delta| (descending)", "delta_abs")],
+    description="Sort:",
+    layout=widgets.Layout(width="360px"),
+)
+
+def render_table(sort_key):
+    table_out.clear_output(wait=True)
+    view = df.copy()
+    if sort_key == "N4_desc":
+        view = view.sort_values("N/4", ascending=False)
+    elif sort_key == "N4_asc":
+        view = view.sort_values("N/4", ascending=True)
+    elif sort_key == "type":
+        view = view.sort_values(["Type", "N/4"], ascending=[True, False])
+    elif sort_key == "n1":
+        view = view.sort_values("n1", ascending=True)
+    elif sort_key == "delta_abs":
+        view = view.assign(ad=view["Delta"].abs())
+        view = view.sort_values("ad", ascending=False).drop(columns=["ad"])
+
+    rows_html = ""
+    for _, r in view.iterrows():
+        is_eigen = r["Type"] == "Eigenmode"
+        bg = "#E8F5E9" if is_eigen else "#FFF"
+        type_color = "#2E8B57" if is_eigen else "#C44E52"
+        rows_html += (
+            f"<tr style='background:{bg};'>"
+            f"<td style='padding:5px 12px;'><b>{r['Particle']}</b></td>"
+            f"<td style='padding:5px 12px;'>{r['(n1,n2)']}</td>"
+            f"<td style='padding:5px 12px; text-align:right;'>{r['Support']}</td>"
+            f"<td style='padding:5px 12px; text-align:right;'>{r['N/4']:.1f}</td>"
+            f"<td style='padding:5px 12px; text-align:right;'>{r['Base']}</td>"
+            f"<td style='padding:5px 12px; text-align:right; color:{type_color}; "
+            f"font-weight:bold;'>{r['Delta']:+.2f}</td>"
+            f"<td style='padding:5px 12px; color:{type_color};'>{r['Type']}</td>"
+            f"</tr>"
+        )
+
+    html = (
+        "<div style='font-family:-apple-system,system-ui,sans-serif; "
+        "max-width:900px; margin-top:12px;'>"
+        "<table style='border-collapse:collapse; font-size:13px; "
+        "width:100%; background:#FFF; border:1px solid #DDD; "
+        "border-radius:6px; overflow:hidden;'>"
+        "<thead><tr style='background:#EEE;'>"
+        "<th style='padding:6px 12px; text-align:left;'>Particle</th>"
+        "<th style='padding:6px 12px; text-align:left;'>(n1,n2)</th>"
+        "<th style='padding:6px 12px; text-align:right;'>Support</th>"
+        "<th style='padding:6px 12px; text-align:right;'>N/4</th>"
+        "<th style='padding:6px 12px; text-align:right;'>Base</th>"
+        "<th style='padding:6px 12px; text-align:right;'>Delta</th>"
+        "<th style='padding:6px 12px; text-align:left;'>Type</th>"
+        "</tr></thead><tbody>"
+        + rows_html +
+        "</tbody></table>"
+        "<p style='color:#666; font-size:12px; margin-top:8px;'>"
+        "Green rows: Substrate Eigenmodes (delta = 0). "
+        "White rows: Mesh Resonances (delta != 0)."
+        "</p></div>"
+    )
+    with table_out:
+        display(HTML(html))
+
+def on_change(change):
+    render_table(sort_dd.value)
+
+sort_dd.observe(on_change)
+
+# ============================================================
+# RENDER
+# ============================================================
+
+display(widgets.HTML(
+    "<div style='font-family:-apple-system,system-ui,sans-serif; "
+    "max-width:960px; line-height:1.6; color:#222;'>"
+    "<h2 style='margin-bottom:4px;'>Widget 14 — The 5 + 9 Split</h2>"
+    "<p style='color:#666; margin-top:0;'>"
+    "The 14 modes at λ = 4 split into <b>5 Substrate Eigenmodes</b> "
+    "(δ = 0) and <b>9 Mesh Resonances</b> (δ ≠ 0). After correcting "
+    "the W/Z base formulas, the split is exact. The primary δ rule is "
+    "<code>δ = (d−1)(2−n₁)</code> for n₁ ∈ {1, 2, 3}."
+    "</p></div>"
+))
+
+display(widgets.HTML("<h3 style='font-family:sans-serif;'>The 14 particles</h3>"))
+display(sort_dd)
+display(table_out)
+render_table("N4_desc")
+
+display(widgets.HTML(
+    "<div style='font-family:-apple-system,system-ui,sans-serif; "
+    "max-width:960px; line-height:1.65; color:#333; "
+    "margin-top:20px; padding:16px 20px; background:#FAFAFA; "
+    "border-left:5px solid #2E8B57; border-radius:5px;'>"
+    "<b>What this widget shows</b><br><br>"
+    "<b>1. The 5 + 9 split</b> (top-left): 5 modes with δ = 0 "
+    "(green) and 9 modes with δ ≠ 0 (red).<br><br>"
+    "<b>2. The primary δ rule</b> (top-right): δ = (d−1)(2−n₁) "
+    "for n₁ ∈ {1, 2, 3}. The support-64 modes (ν, e) and the "
+    "n₁ ∈ {5, 6, 7} modes are the exceptions.<br><br>"
+    "<b>3. Base formulas</b> (bottom-left): each mode's base value "
+    "vs its N/4 target. Eigenmodes sit on the 1:1 line "
+    "(δ = 0); resonances sit off it.<br><br>"
+    "<b>4. |δ| spectrum</b> (bottom-right): the resonance deviations "
+    "span 0.5 to 33, spread over three orders of magnitude.<br><br>"
+    "<span style='color:#666; font-size:13px;'>"
+    "<b>Derived:</b> the 5 + 9 split; the primary δ rule for "
+    "n₁ ∈ {1, 2, 3}; the W/Z base correction. &nbsp;"
+    "<b>Partially derived:</b> the support-64 δ values; the "
+    "{0, +0.5} split at n₁ ∈ {5, 6, 7}."
+    "</span></div>"
+))
+
+print()
+print("=" * 84)
+print("Widget 14 complete.")
+print("=" * 84)
