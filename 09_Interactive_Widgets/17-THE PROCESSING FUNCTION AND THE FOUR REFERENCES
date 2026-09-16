@@ -1,0 +1,425 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 17: THE PROCESSING FUNCTION AND THE FOUR REFERENCES
+# ============================================================
+# Instructions:
+#   1. Paste this ENTIRE cell into a new Google Colab cell.
+#   2. Run it. Scroll down for the interactive figure.
+#
+# This widget visualizes the processing weight function
+#   m_f(r) = A * (r / r_e)^B * exp(C * (r - r_e))
+# and the four reference entries at exact halvings of kL.
+#
+# The base-2 pattern is shown as four horizontal targets:
+#   kL, kL/2, kL/4, kL/8
+# with the particles that sit closest to them.
+# ============================================================
+
+!pip install -q ipywidgets plotly numpy scipy
+
+from google.colab import output
+output.enable_custom_widget_manager()
+
+import numpy as np
+import ipywidgets as widgets
+from IPython.display import display, HTML
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+from scipy.optimize import brentq
+pio.renderers.default = "colab"
+
+# ============================================================
+# FRAMEWORK CONSTANTS
+# ============================================================
+d = 4
+N = d * 2**d        # 64
+H = 2**d            # 16
+V = (d - 1) * 2**d  # 48
+L = 8
+kL = 38.442527
+
+# Processing function coefficients
+A = kL / 7.88
+B = H + kL / 26
+C = -kL * (d + 4.23)
+r_e = 0.025954
+
+def m_f(r):
+    return A * (r / r_e)**B * np.exp(C * (r - r_e))
+
+# ============================================================
+# THE 13 PARTICLES (from the base-2 paper)
+# ============================================================
+particles = {
+    "nu":  (0.025277, "light neutrino", 0),
+    "e":   (0.025954, "electron", -1),
+    "u":   (0.027005, "up", 2/3),
+    "d":   (0.027909, "down", -1/3),
+    "s":   (0.028405, "strange", -1/3),
+    "mu":  (0.029813, "muon", -1),
+    "c":   (0.030461, "charm", 2/3),
+    "tau": (0.031913, "tau", -1),
+    "b":   (0.033079, "bottom", -1/3),
+    "W":   (0.033236, "W boson", 1),
+    "Z":   (0.033262, "Z boson", 0),
+    "H":   (0.041677, "Higgs", 0),
+    "t":   (0.067489, "top", 2/3),
+}
+
+# ============================================================
+# THE FOUR REFERENCES
+# ============================================================
+references = [
+    ("Z", 0, kL),       # n = 0
+    ("c", 1, kL / 2),   # n = 1
+    ("d", 2, kL / 4),   # n = 2
+    ("e", 3, kL / 8),   # n = 3
+]
+
+# ============================================================
+# DIAGNOSTIC PRINTOUT
+# ============================================================
+print("=" * 70)
+print("THE PROCESSING FUNCTION")
+print("=" * 70)
+print(f"  m_f(r) = A * (r/r_e)^B * exp(C * (r - r_e))")
+print(f"  A = {A:.6f}")
+print(f"  B = {B:.6f}")
+print(f"  C = {C:.6f}")
+print(f"  r_e = {r_e}")
+print()
+
+# Function maximum
+r_max = -B / C
+m_max = m_f(r_max)
+print(f"  Maximum at r = {r_max:.6f}, m_f = {m_max:.4f} GeV")
+print()
+
+print("=" * 70)
+print("THE FOUR REFERENCE ENTRIES")
+print("=" * 70)
+print(f"{'particle':>10} {'target':>12} {'value':>10} "
+      f"{'m_f(r)':>10} {'error':>10}")
+print("-" * 70)
+for p, n, target in references:
+    r = particles[p][0]
+    w = m_f(r)
+    err = abs(w - target) / target * 100
+    print(f"{p:>10} {'kL/2^'+str(n):>12} {target:>10.4f} "
+          f"{w:>10.4f} {err:>9.3f}%")
+print()
+
+print("=" * 70)
+print("ALL 13 PARTICLES")
+print("=" * 70)
+print(f"{'particle':>10} {'ratio':>10} {'m_f(r)':>10} "
+      f"{'nearest':>12} {'dist':>8}")
+print("-" * 70)
+for p, (r, name, q) in sorted(particles.items(), key=lambda kv: m_f(kv[1][0]),
+                              reverse=True):
+    w = m_f(r)
+    best_n = None; best_dist = np.inf
+    for n in range(-4, 8):
+        target = kL / (2**n)
+        dist = abs(w - target)
+        if dist < best_dist:
+            best_dist = dist; best_n = n
+    target_str = "kL/2^" + str(best_n)
+    print(f"{p:>10} {r:>10.6f} {w:>10.4f} {target_str:>12} {best_dist:>8.4f}")
+
+# ============================================================
+# FIGURE BUILDER
+# ============================================================
+
+def build_figure(show_targets=True, show_curve=True, highlight_ref=None):
+    fig = make_subplots(
+        rows=1, cols=2,
+        column_widths=[0.6, 0.4],
+        subplot_titles=(
+            "Processing weight m_f(r) vs ratio r",
+            "Particles near the four kL/2^n targets",
+        ),
+        specs=[[{"type": "xy"}, {"type": "xy"}]],
+        horizontal_spacing=0.10,
+    )
+
+    # --- Left panel: m_f(r) curve ---
+    r_lo, r_hi = 0.024, 0.055
+    r_arr = np.linspace(r_lo, r_hi, 500)
+    w_arr = m_f(r_arr)
+
+    if show_curve:
+        fig.add_trace(go.Scatter(
+            x=r_arr, y=w_arr,
+            mode="lines",
+            line=dict(color="#4C72B0", width=3),
+            name="m_f(r)",
+            hovertemplate="r = %{x:.6f}<br>m_f = %{y:.4f}<extra></extra>",
+        ), row=1, col=1)
+
+    # Horizontal targets
+    if show_targets:
+        target_labels = ["kL", "kL/2", "kL/4", "kL/8"]
+        target_colors = ["#C44E52", "#DD8452", "#55A868", "#8172B3"]
+        for n, (p, idx, target) in enumerate(references):
+            fig.add_hline(
+                y=target, line=dict(color=target_colors[n],
+                                    width=1.5, dash="dot"),
+                annotation_text=f"{target_labels[n]} = {target:.2f}",
+                annotation_position="right",
+                row=1, col=1,
+            )
+
+    # Particle markers on the curve
+    for p, (r, name, q) in particles.items():
+        w = m_f(r)
+        is_ref = p in ["Z", "c", "d", "e"]
+        is_highlight = (highlight_ref == p)
+        size = 16 if is_highlight else (12 if is_ref else 9)
+        color = "#C44E52" if is_ref else "#888888"
+        symbol = "circle" if is_ref else "circle-open"
+        fig.add_trace(go.Scatter(
+            x=[r], y=[w],
+            mode="markers",
+            marker=dict(size=size, color=color, symbol=symbol,
+                        line=dict(width=2, color="black")),
+            name=p,
+            hovertemplate=f"<b>{p}</b> ({name})<br>"
+                          f"r = {r:.6f}<br>"
+                          f"m_f = {w:.4f} GeV<br>"
+                          f"charge = {q:+.4f}<extra></extra>",
+            showlegend=False,
+        ), row=1, col=1)
+
+    # --- Right panel: particles vs kL/2^n targets ---
+    # Plot each reference level as a horizontal band
+    target_levels = [kL, kL/2, kL/4, kL/8]
+    target_names = ["kL", "kL/2", "kL/4", "kL/8"]
+
+    for i, (level, name) in enumerate(zip(target_levels, target_names)):
+        fig.add_trace(go.Scatter(
+            x=[-0.5, 3.5], y=[level, level],
+            mode="lines",
+            line=dict(color="#DDDDDD", width=1),
+            hoverinfo="skip", showlegend=False,
+        ), row=1, col=2)
+
+    # Place each particle near its nearest target
+    for p, (r, name, q) in particles.items():
+        w = m_f(r)
+        # Find nearest target
+        best_n = None; best_dist = np.inf
+        for n in range(-4, 8):
+            target = kL / (2**n)
+            dist = abs(w - target)
+            if dist < best_dist:
+                best_dist = dist; best_n = n
+        # Position at the nearest target level
+        target = kL / (2**best_n)
+        # X-position: index of target in the list (or interpolate)
+        if best_n in [0, 1, 2, 3]:
+            x_pos = 3 - best_n  # 0 at kL, 3 at kL/8
+        else:
+            x_pos = 3 - best_n  # extends beyond
+        is_ref = p in ["Z", "c", "d", "e"]
+        is_highlight = (highlight_ref == p)
+        size = 18 if is_highlight else (14 if is_ref else 10)
+        color = "#C44E52" if is_ref else "#888888"
+        fig.add_trace(go.Scatter(
+            x=[x_pos], y=[w],
+            mode="markers+text",
+            marker=dict(size=size, color=color,
+                        line=dict(width=2, color="black")),
+            text=[p],
+            textposition="top center",
+            textfont=dict(size=10),
+            hovertemplate=f"<b>{p}</b><br>"
+                          f"m_f = {w:.4f}<br>"
+                          f"nearest target: {name}<br>"
+                          f"distance: {best_dist:.4f}<extra></extra>",
+            showlegend=False,
+        ), row=1, col=2)
+
+    # Target level annotations
+    for i, (level, name) in enumerate(zip(target_levels, target_names)):
+        fig.add_annotation(
+            x=-0.4, y=level, xref="x2", yref="y2",
+            text=f"<b>{name}</b>",
+            showarrow=False, font=dict(size=11, color="#555"),
+            xanchor="right",
+        )
+
+    fig.update_xaxes(title_text="ratio r", range=[0.024, 0.055],
+                     showgrid=True, gridcolor="#EEE", row=1, col=1)
+    fig.update_yaxes(title_text="m_f(r) [GeV]", range=[0, 260],
+                     showgrid=True, gridcolor="#EEE", row=1, col=1)
+
+    fig.update_xaxes(title_text="target level",
+                     tickvals=[0, 1, 2, 3],
+                     ticktext=["kL", "kL/2", "kL/4", "kL/8"],
+                     range=[-0.5, 3.5],
+                     showgrid=False, row=1, col=2)
+    fig.update_yaxes(title_text="m_f(r) [GeV]", range=[0, 260],
+                     showgrid=True, gridcolor="#EEE", row=1, col=2)
+
+    fig.update_layout(
+        title=dict(
+            text="<b>The Processing Function m_f(r) and the Four References</b><br>"
+                 "<sub>The formula's output at four particles (Z, c, d, e) "
+                 "equals successive halvings of the warp factor kL. "
+                 "Red markers are references; gray markers are perturbations.</sub>",
+            x=0.5, xanchor="center",
+        ),
+        height=620,
+        margin=dict(l=60, r=40, t=100, b=60),
+        plot_bgcolor="white",
+        showlegend=False,
+        hovermode="closest",
+    )
+    return fig
+
+# ============================================================
+# CONTROLS
+# ============================================================
+
+highlight_dropdown = widgets.Dropdown(
+    options=[("-- all particles --", None)] +
+            [(f"{p} ({particles[p][1]})", p) for p in particles],
+    description="Highlight:",
+    layout=widgets.Layout(width="360px"),
+)
+
+show_targets_check = widgets.Checkbox(
+    value=True, description="Show kL/2^n targets",
+    layout=widgets.Layout(width="220px"),
+)
+
+show_curve_check = widgets.Checkbox(
+    value=True, description="Show m_f(r) curve",
+    layout=widgets.Layout(width="220px"),
+)
+
+fig_widget = go.FigureWidget(build_figure())
+
+def update_figure(*args):
+    new_fig = build_figure(
+        show_targets=show_targets_check.value,
+        show_curve=show_curve_check.value,
+        highlight_ref=highlight_dropdown.value,
+    )
+    fig_widget.data = []
+    for tr in new_fig.data:
+        fig_widget.add_trace(tr)
+    fig_widget.layout = new_fig.layout
+
+highlight_dropdown.observe(update_figure, names="value")
+show_targets_check.observe(update_figure, names="value")
+show_curve_check.observe(update_figure, names="value")
+
+# ============================================================
+# RENDER
+# ============================================================
+
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1000px; line-height:1.55; color:#222;">
+  <h2 style="margin-bottom:4px;">Widget 17 — The Processing Function and the Four References</h2>
+  <p style="color:#666; margin-top:0;">
+    The processing weight <code>m_f(r)</code> maps each mode's
+    shape parameter r to a weight. Its output at four specific
+    particles equals exact halvings of the warp factor:
+    <b style="color:#C44E52">Z at kL</b>, <b style="color:#DD8452">c at kL/2</b>,
+    <b style="color:#55A868">d at kL/4</b>, <b style="color:#8172B3">e at kL/8</b>.
+    The four references cover all four Standard Model charge
+    categories. The other nine particles are perturbations.
+  </p>
+</div>
+"""))
+
+display(widgets.HBox([highlight_dropdown]))
+display(widgets.HBox([show_targets_check, show_curve_check]))
+display(fig_widget)
+
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1000px; line-height:1.55; color:#444;
+            margin-top:18px; padding:14px 18px; background:#FAFAFA;
+            border-left:4px solid #C44E52; border-radius:4px;">
+  <b>How to read the figure</b><br>
+  <b>Left panel:</b> the processing weight function m_f(r).
+  Red filled markers are the four references (Z, c, d, e).
+  Gray open markers are the nine perturbations. The dashed
+  horizontal lines are the targets kL/2^n.<br><br>
+  <b>Right panel:</b> the same particles arranged by their
+  nearest kL/2^n target. References sit exactly on their
+  target levels; perturbations sit at various distances.<br><br>
+  <span style="color:#666; font-size:13px;">
+  The four references span the full mass range: e is the lightest
+  reference at 4.88 GeV, Z is the heaviest at 36.93 GeV. The
+  perturbations include the lightest particle (nu at 3.81 GeV)
+  and the heaviest (t at 171.93 GeV).
+  </span>
+</div>
+"""))
+
+# ============================================================
+# REFERENCE SUMMARY TABLE
+# ============================================================
+ref_rows = ""
+for p, n, target in references:
+    r = particles[p][0]
+    w = m_f(r)
+    err = abs(w - target) / target * 100
+    charge = particles[p][2]
+    ref_rows += f"""
+    <tr>
+      <td style="padding:6px 12px; border-bottom:1px solid #EEE;">
+        <b>{p}</b>
+      </td>
+      <td style="padding:6px 12px; border-bottom:1px solid #EEE;
+                 font-family:monospace;">
+        kL/2^{n}
+      </td>
+      <td style="padding:6px 12px; border-bottom:1px solid #EEE;">
+        {target:.4f}
+      </td>
+      <td style="padding:6px 12px; border-bottom:1px solid #EEE;">
+        {w:.4f}
+      </td>
+      <td style="padding:6px 12px; border-bottom:1px solid #EEE;
+                 color:{'#2E8B57' if err < 2 else '#DAA520'};">
+        {err:.3f}%
+      </td>
+      <td style="padding:6px 12px; border-bottom:1px solid #EEE;">
+        {charge:+.4f}
+      </td>
+    </tr>
+    """
+
+display(widgets.HTML(f"""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1000px; margin-top:18px; padding:14px 18px;
+            background:#FAFAFA; border-left:4px solid #666;
+            border-radius:4px; color:#333;">
+  <b>The Four References</b>
+  <table style="border-collapse:collapse; margin-top:10px; font-size:14px;">
+    <tr style="background:#EEE;">
+      <th style="padding:8px 12px; text-align:left;">Particle</th>
+      <th style="padding:8px 12px; text-align:left;">Target</th>
+      <th style="padding:8px 12px; text-align:left;">Target value</th>
+      <th style="padding:8px 12px; text-align:left;">m_f(r)</th>
+      <th style="padding:8px 12px; text-align:left;">Error</th>
+      <th style="padding:8px 12px; text-align:left;">Charge</th>
+    </tr>
+    {ref_rows}
+  </table>
+  <p style="margin-top:10px; font-size:13px; color:#666;">
+    The four references cover all four Standard Model charge
+    categories: Z (0), c (+2/3), d (−1/3), e (−1).
+  </p>
+</div>
+"""))
+
+print("\nDone. Use the dropdown to highlight a particle.")
+print("Toggle the checkboxes to show/hide the curve and targets.")
+print("The reference table below the figure gives exact numerical values.")
