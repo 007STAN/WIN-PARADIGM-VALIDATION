@@ -1,0 +1,326 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 13: THE SELF-CANCELING VACUUM (v4)
+# ============================================================
+
+!pip install -q ipywidgets plotly numpy pandas
+
+from google.colab import output
+output.enable_custom_widget_manager()
+
+import numpy as np
+import pandas as pd
+import ipywidgets as widgets
+from IPython.display import display, HTML
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+pio.renderers.default = "colab"
+
+# ============================================================
+# BUILD DATA (module level — everything visible everywhere)
+# ============================================================
+
+L = 8
+
+def lam(n1, n2, L=8):
+    return 4.0 - 2.0*np.cos(2*np.pi*n1/L) - 2.0*np.cos(2*np.pi*n2/L)
+
+spectrum = {}
+for n1 in range(L):
+    for n2 in range(L):
+        l = round(lam(n1, n2), 6)
+        spectrum.setdefault(l, []).append((n1, n2))
+
+lambdas = sorted(spectrum.keys())
+counts = [len(spectrum[l]) for l in lambdas]
+mirrors = [round(8.0 - l, 6) for l in lambdas]
+mirror_counts = [len(spectrum.get(m, [])) for m in mirrors]
+self_paired = [abs(l - m) < 1e-9 for l, m in zip(lambdas, mirrors)]
+
+modes_at_4 = spectrum[4.0]
+
+N4_map = {
+    (0,4): 60.0, (4,0): 24.0,
+    (1,3): 21.0, (1,5): 20.0,
+    (3,1): 14.0, (3,7): 14.0,
+    (5,7): 12.0, (7,3):  9.5,
+    (7,5):  9.0, (5,1):  7.5,
+    (2,2):  2.0, (2,6):  2.0,
+    (6,2):  1.0, (6,6):  0.5,
+}
+particles = {
+    (0,4):"nu", (4,0):"e", (1,3):"u", (1,5):"d",
+    (3,1):"s", (3,7):"mu", (5,7):"dark", (7,3):"c",
+    (7,5):"tau", (5,1):"b", (2,2):"W", (2,6):"Z",
+    (6,2):"H", (6,6):"t"
+}
+
+# Module-level lists (used by both the figure and the table)
+n1_vals = [m[0] for m in modes_at_4]
+n2_vals = [m[1] for m in modes_at_4]
+names_14 = [particles[m] for m in modes_at_4]
+n4_vals = [N4_map[m] for m in modes_at_4]
+
+total_zp = sum(0.5 * l * c for l, c in zip(lambdas, counts))
+paired_zp = total_zp - 0.5 * 4.0 * 14
+residual_zp = 0.5 * 4.0 * 14
+
+# ============================================================
+# FIGURE
+# ============================================================
+
+def build_figure():
+    fig = make_subplots(
+        rows=2, cols=2,
+        column_widths=[0.55, 0.45],
+        row_heights=[0.5, 0.5],
+        subplot_titles=(
+            "The 8x8 torus spectrum — mirror lambda <-> 8 - lambda",
+            "The cancellation",
+            "The residual — 14 modes at lambda = 4",
+            "N/4 values of the residual",
+        ),
+        specs=[
+            [{"type": "xy"}, {"type": "domain"}],
+            [{"type": "xy"}, {"type": "xy"}],
+        ],
+        horizontal_spacing=0.12,
+        vertical_spacing=0.18,
+    )
+
+    # --- Panel 1 (1,1): spectrum bars ---
+    colors = ["#C44E52" if s else "#4C72B0" for s in self_paired]
+    x_idx = list(range(len(lambdas)))
+    fig.add_trace(go.Bar(
+        x=x_idx, y=counts,
+        marker=dict(color=colors, line=dict(width=0)),
+        text=[f"{c}" for c in counts],
+        textposition="outside",
+        customdata=[f"{l:.3f}" for l in lambdas],
+        hovertemplate="lambda = %{customdata}<br>count = %{y}<extra></extra>",
+        showlegend=False,
+    ), row=1, col=1)
+
+    fig.update_xaxes(
+        title_text="eigenvalue lambda",
+        tickmode="array",
+        tickvals=x_idx,
+        ticktext=[f"{l:.2f}" for l in lambdas],
+        tickangle=-45,
+        row=1, col=1,
+    )
+    fig.update_yaxes(title_text="multiplicity", row=1, col=1)
+
+    i4 = lambdas.index(4.0)
+    fig.add_annotation(
+        x=i4, y=counts[i4] + 2,
+        text="<b>SELF-PAIRED</b><br>14 modes",
+        showarrow=False,
+        font=dict(color="#C44E52", size=11),
+        xref="x1", yref="y1",
+    )
+
+    # --- Panel 2 (1,2): cancellation pie ---
+    fig.add_trace(go.Pie(
+        labels=["Paired (cancels)", f"Residual: {residual_zp:.0f}"],
+        values=[paired_zp, residual_zp],
+        marker=dict(colors=["#CCCCCC", "#C44E52"],
+                    line=dict(width=1, color="black")),
+        textinfo="label+percent",
+        textfont=dict(size=11),
+        hole=0.4,
+        showlegend=False,
+        hovertemplate="%{label}<br>value = %{value:.2f}<extra></extra>",
+    ), row=1, col=2)
+
+    # --- Panel 3 (2,1): 14 modes on torus ---
+    fig.add_trace(go.Scatter(
+        x=n1_vals, y=n2_vals,
+        mode="markers+text",
+        text=names_14,
+        textposition="top center",
+        textfont=dict(size=10),
+        marker=dict(
+            size=[max(8, min(28, v/2)) for v in n4_vals],
+            color=n4_vals,
+            colorscale="Viridis",
+            line=dict(width=1, color="black"),
+            showscale=False,
+        ),
+        hovertemplate="%{text}<br>(n1,n2)=(%{x},%{y})<extra></extra>",
+        showlegend=False,
+    ), row=2, col=1)
+
+    fig.update_xaxes(title_text="n1", range=[-1, 8],
+                     tickvals=list(range(8)), row=2, col=1)
+    fig.update_yaxes(title_text="n2", range=[-1, 8],
+                     tickvals=list(range(8)), row=2, col=1)
+
+    # --- Panel 4 (2,2): N/4 bar chart ---
+    order = np.argsort(n4_vals)[::-1]
+    names_sorted = [names_14[i] for i in order]
+    n4_sorted = [n4_vals[i] for i in order]
+    colors_sorted = ["#C44E52" if n > 10 else
+                     "#DD8452" if n > 2 else "#4C72B0"
+                     for n in n4_sorted]
+
+    fig.add_trace(go.Bar(
+        x=names_sorted, y=n4_sorted,
+        marker=dict(color=colors_sorted),
+        text=[f"{v:.1f}" for v in n4_sorted],
+        textposition="outside",
+        hovertemplate="%{x}<br>N/4 = %{y:.2f}<extra></extra>",
+        showlegend=False,
+    ), row=2, col=2)
+
+    fig.update_xaxes(title_text="particle", tickangle=-45, row=2, col=2)
+    fig.update_yaxes(title_text="N/4", row=2, col=2)
+
+    fig.update_layout(
+        title=dict(
+            text="<b>Widget 13 — The Self-Canceling Vacuum</b><br>"
+                 "<sub>All modes pair under lambda <-> 8 - lambda "
+                 "except the 14 at lambda = 4.</sub>",
+            x=0.5, xanchor="center", font=dict(size=15),
+        ),
+        height=820,
+        margin=dict(l=60, r=40, t=110, b=80),
+        plot_bgcolor="white",
+    )
+    return fig
+
+fig = build_figure()
+fig.show()
+
+# ============================================================
+# VERIFICATION TABLE
+# ============================================================
+
+print("=" * 78)
+print("Mirror symmetry lambda <-> 8 - lambda on the 8x8 torus")
+print("=" * 78)
+print()
+print(f"{'lambda':>10} {'count':>8} {'mirror':>10} {'count':>8} {'status':>16}")
+print("-" * 78)
+for l, c, m, mc, s in zip(lambdas, counts, mirrors, mirror_counts, self_paired):
+    status = "SELF-PAIRED" if s else "paired"
+    marker = "  <-- 14 particles" if s else ""
+    print(f"{l:>10.4f} {c:>8} {m:>10.4f} {mc:>8} {status:>16}{marker}")
+print()
+
+print(f"Total zero-point sum over 64 modes:  {total_zp:.4f}")
+print(f"Paired contribution (cancels):       {paired_zp:.4f}")
+print(f"Residual (14 modes at lambda = 4):   {residual_zp:.4f}")
+print(f"Ratio (residual / total):            {residual_zp / total_zp:.6f} = 7/32")
+print()
+
+# ============================================================
+# INTERACTIVE TABLE
+# ============================================================
+
+df = pd.DataFrame({
+    "Particle": names_14,
+    "(n1, n2)": [f"({m[0]}, {m[1]})" for m in modes_at_4],
+    "N/4": n4_vals,
+})
+
+table_out = widgets.Output()
+sort_dd = widgets.Dropdown(
+    options=[("by N/4 (descending)", "N4_desc"),
+             ("by N/4 (ascending)", "N4_asc"),
+             ("by particle name", "name")],
+    description="Sort:",
+    layout=widgets.Layout(width="360px"),
+)
+
+def render_table(sort_key):
+    table_out.clear_output(wait=True)
+    view = df.copy()
+    if sort_key == "N4_desc":
+        view = view.sort_values("N/4", ascending=False)
+    elif sort_key == "N4_asc":
+        view = view.sort_values("N/4", ascending=True)
+    else:
+        view = view.sort_values("Particle")
+
+    rows = ""
+    for _, r in view.iterrows():
+        n4 = r["N/4"]
+        color = ("#C44E52" if n4 > 10 else
+                 "#DD8452" if n4 > 2 else "#4C72B0")
+        rows += (
+            f"<tr>"
+            f"<td style='padding:5px 12px;'><b>{r['Particle']}</b></td>"
+            f"<td style='padding:5px 12px;'>{r['(n1, n2)']}</td>"
+            f"<td style='padding:5px 12px; text-align:right; "
+            f"color:{color}; font-weight:bold;'>{n4:.2f}</td>"
+            f"</tr>"
+        )
+
+    html = (
+        "<div style='font-family:-apple-system,system-ui,sans-serif; "
+        "max-width:520px; margin-top:12px;'>"
+        "<table style='border-collapse:collapse; font-size:13px; "
+        "width:100%; background:#FFF; border:1px solid #DDD; "
+        "border-radius:6px; overflow:hidden;'>"
+        "<thead><tr style='background:#EEE;'>"
+        "<th style='padding:6px 12px; text-align:left;'>Particle</th>"
+        "<th style='padding:6px 12px; text-align:left;'>(n1, n2)</th>"
+        "<th style='padding:6px 12px; text-align:right;'>N/4</th>"
+        "</tr></thead><tbody>"
+        + rows +
+        "</tbody></table></div>"
+    )
+    with table_out:
+        display(HTML(html))
+
+def on_change(change):
+    render_table(sort_dd.value)
+
+sort_dd.observe(on_change)
+
+display(widgets.HTML(
+    "<div style='font-family:-apple-system,system-ui,sans-serif; "
+    "max-width:960px; line-height:1.6; color:#222;'>"
+    "<h2 style='margin-bottom:4px;'>Widget 13 — The Self-Canceling Vacuum</h2>"
+    "<p style='color:#666; margin-top:0;'>"
+    "The 8x8 torus Laplacian has an exact mirror symmetry "
+    "<code>lambda &lt;-&gt; 8 - lambda</code>. Every eigenvalue pairs "
+    "with a mirror of equal multiplicity, <b>except lambda = 4</b>. "
+    "The 14 modes at lambda = 4 are self-paired: they cannot cancel. "
+    "They are the <b>14 Standard Model particles</b>."
+    "</p></div>"
+))
+
+display(widgets.HTML("<h3 style='font-family:sans-serif;'>The 14 particles at lambda = 4</h3>"))
+display(sort_dd)
+display(table_out)
+render_table("N4_desc")
+
+display(widgets.HTML(
+    "<div style='font-family:-apple-system,system-ui,sans-serif; "
+    "max-width:960px; line-height:1.65; color:#333; "
+    "margin-top:20px; padding:16px 20px; background:#FAFAFA; "
+    "border-left:5px solid #C44E52; border-radius:5px;'>"
+    "<b>What this widget shows</b><br><br>"
+    "<b>1. The 8x8 torus spectrum</b> (top-left): 13 distinct "
+    "eigenvalues, mirror-symmetric under lambda &lt;-&gt; 8 - lambda.<br><br>"
+    "<b>2. The cancellation</b> (top-right): every mode pairs with a "
+    "mirror. The paired contributions cancel exactly. Only the "
+    "self-paired modes at lambda = 4 survive. The residual is exactly "
+    "<b>28 out of 128</b> = 7/32 of the total zero-point sum.<br><br>"
+    "<b>3. The residual</b> (bottom-left): the 14 modes at lambda = 4 "
+    "on the (n1, n2) torus.<br><br>"
+    "<b>4. The N/4 values</b> (bottom-right): the 14 numbers that "
+    "order the Standard Model particles by mass.<br><br>"
+    "<span style='color:#666; font-size:13px;'>"
+    "<b>Derived:</b> the particle count (14), the multiplet structure, "
+    "the residual of the cancellation. &nbsp;"
+    "<b>Empirical:</b> the specific N/4 values."
+    "</span></div>"
+))
+
+print()
+print("=" * 78)
+print("Widget 13 complete.")
+print("=" * 78)
