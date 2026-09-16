@@ -1,0 +1,312 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 18 (FIXED): THE CROSSOVER AND CHARGE BALANCE
+# ============================================================
+!pip install -q ipywidgets plotly numpy scipy
+
+from google.colab import output
+output.enable_custom_widget_manager()
+
+import numpy as np
+import ipywidgets as widgets
+from IPython.display import display, HTML, clear_output
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+from scipy.optimize import brentq
+pio.renderers.default = "colab"
+
+# Framework constants
+d = 4
+N = d * 2**d
+H = 2**d
+V = (d - 1) * 2**d
+L = 8
+kL = 38.442527
+
+A = kL / 7.88
+B = H + kL / 26
+C = -kL * (d + 4.23)
+r_e = 0.025954
+
+def m_f(r):
+    return A * (r / r_e)**B * np.exp(C * (r - r_e))
+
+r_cross = brentq(lambda r: m_f(r) - kL, 0.03, 0.04)
+
+particles = {
+    "nu":  (0.025277, "light neutrino", 0),
+    "e":   (0.025954, "electron", -1),
+    "u":   (0.027005, "up", 2/3),
+    "d":   (0.027909, "down", -1/3),
+    "s":   (0.028405, "strange", -1/3),
+    "mu":  (0.029813, "muon", -1),
+    "c":   (0.030461, "charm", 2/3),
+    "tau": (0.031913, "tau", -1),
+    "b":   (0.033079, "bottom", -1/3),
+    "W":   (0.033236, "W boson", 1),
+    "Z":   (0.033262, "Z boson", 0),
+    "H":   (0.041677, "Higgs", 0),
+    "t":   (0.067489, "top", 2/3),
+}
+
+sorted_particles = sorted(particles.items(), key=lambda kv: kv[1][0])
+inputs = [(p, r, q) for p, (r, n, q) in sorted_particles if r < r_cross]
+outputs = [(p, r, q) for p, (r, n, q) in sorted_particles if r >= r_cross]
+input_charge = sum(q for _, _, q in inputs)
+output_charge = sum(q for _, _, q in outputs)
+total_charge = input_charge + output_charge
+
+# ------- figure builder -------
+def build_figure(highlight=None):
+    fig = make_subplots(
+        rows=1, cols=3,
+        column_widths=[0.40, 0.30, 0.30],
+        subplot_titles=(
+            "m_f(r) with crossover at kL",
+            "Particle charge vs r",
+            "Cumulative charge vs r",
+        ),
+        specs=[[{"type": "xy"}, {"type": "xy"}, {"type": "xy"}]],
+        horizontal_spacing=0.08,
+    )
+
+    # Left panel
+    r_arr = np.linspace(0.024, 0.055, 500)
+    fig.add_trace(go.Scatter(
+        x=r_arr, y=m_f(r_arr),
+        mode="lines", line=dict(color="#4C72B0", width=3),
+        hoverinfo="skip", showlegend=False,
+    ), row=1, col=1)
+
+    fig.add_shape(type="line", x0=r_cross, x1=r_cross, y0=0, y1=260,
+                  line=dict(color="#C44E52", width=2, dash="dash"),
+                  row=1, col=1)
+    fig.add_shape(type="line", x0=0.024, x1=0.055, y0=kL, y1=kL,
+                  line=dict(color="#C44E52", width=2, dash="dot"),
+                  row=1, col=1)
+
+    for p, (r, name, q) in particles.items():
+        w = m_f(r)
+        is_input = r < r_cross
+        color = "#4C72B0" if is_input else "#C44E52"
+        size = 16 if highlight == p else 10
+        fig.add_trace(go.Scatter(
+            x=[r], y=[w], mode="markers+text",
+            marker=dict(size=size, color=color,
+                        line=dict(width=1.5, color="black")),
+            text=[p], textposition="top center",
+            textfont=dict(size=9),
+            hovertext=f"{p}: m_f={w:.2f}, charge={q:+.3f}",
+            hoverinfo="text", showlegend=False,
+        ), row=1, col=1)
+
+    # Middle panel
+    fig.add_shape(type="line", x0=0.024, x1=0.055, y0=0, y1=0,
+                  line=dict(color="#888", width=1), row=1, col=2)
+    fig.add_shape(type="line", x0=r_cross, x1=r_cross, y0=-1.3, y1=1.3,
+                  line=dict(color="#C44E52", width=1.5, dash="dash"),
+                  row=1, col=2)
+
+    for p, (r, name, q) in particles.items():
+        is_input = r < r_cross
+        color = "#4C72B0" if is_input else "#C44E52"
+        size = 16 if highlight == p else 12
+        fig.add_trace(go.Scatter(
+            x=[r], y=[q], mode="markers",
+            marker=dict(size=size, color=color,
+                        line=dict(width=1.5, color="black")),
+            hovertext=f"{p}: charge={q:+.3f}",
+            hoverinfo="text", showlegend=False,
+        ), row=1, col=2)
+
+    # Right panel: cumulative
+    cum_r, cum_q, running = [], [], 0.0
+    for p, r, q in inputs + outputs:
+        running += q
+        cum_r.append(r); cum_q.append(running)
+
+    fig.add_trace(go.Scatter(
+        x=cum_r, y=cum_q, mode="lines+markers",
+        line=dict(color="#55A868", width=2),
+        marker=dict(size=10, color="#55A868",
+                    line=dict(width=1, color="black")),
+        hovertext=[f"cum={q:+.3f}" for q in cum_q],
+        hoverinfo="text", showlegend=False,
+    ), row=1, col=3)
+
+    fig.add_shape(type="line", x0=0.024, x1=0.055,
+                  y0=input_charge, y1=input_charge,
+                  line=dict(color="#4C72B0", width=1.5, dash="dot"),
+                  row=1, col=3)
+    fig.add_shape(type="line", x0=0.024, x1=0.055,
+                  y0=total_charge, y1=total_charge,
+                  line=dict(color="#C44E52", width=1.5, dash="dot"),
+                  row=1, col=3)
+    fig.add_shape(type="line", x0=r_cross, x1=r_cross, y0=-2.2, y1=0.4,
+                  line=dict(color="#C44E52", width=1.5, dash="dash"),
+                  row=1, col=3)
+
+    fig.update_xaxes(title_text="ratio r", range=[0.024, 0.055],
+                     showgrid=True, gridcolor="#EEE", row=1, col=1)
+    fig.update_yaxes(title_text="m_f(r) [GeV]", range=[0, 260],
+                     showgrid=True, gridcolor="#EEE", row=1, col=1)
+    fig.update_xaxes(title_text="ratio r", range=[0.024, 0.055],
+                     showgrid=True, gridcolor="#EEE", row=1, col=2)
+    fig.update_yaxes(title_text="charge", range=[-1.3, 1.3],
+                     showgrid=True, gridcolor="#EEE", row=1, col=2)
+    fig.update_xaxes(title_text="ratio r", range=[0.024, 0.055],
+                     showgrid=True, gridcolor="#EEE", row=1, col=3)
+    fig.update_yaxes(title_text="cumulative charge", range=[-2.2, 0.4],
+                     showgrid=True, gridcolor="#EEE", row=1, col=3)
+
+    fig.update_layout(
+        title=dict(
+            text="<b>The Crossover at kL and the Charge Balance</b><br>"
+                 "<sub>Crossover between Z and H divides 11 inputs "
+                 "(charge -5/3) from 2 outputs (charge +2/3). "
+                 "Total: -1.</sub>",
+            x=0.5, xanchor="center",
+        ),
+        height=620,
+        margin=dict(l=60, r=40, t=100, b=60),
+        plot_bgcolor="white",
+        showlegend=False,
+        hovermode="closest",
+    )
+    return fig
+
+# ------- interactive area -------
+out = widgets.Output()
+
+dropdown = widgets.Dropdown(
+    options=[("-- all --", None)] +
+            [(f"{p} ({particles[p][1]})", p) for p in particles],
+    description="Highlight:",
+    layout=widgets.Layout(width="340px"),
+)
+
+def render(change=None):
+    with out:
+        clear_output(wait=True)
+        p = dropdown.value
+        fig = build_figure(highlight=p)
+        fig.show()
+
+dropdown.observe(render, names="value")
+
+# ------- render everything -------
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1100px; line-height:1.55; color:#222;">
+  <h2 style="margin-bottom:4px;">Widget 18 — The Crossover and Charge Balance</h2>
+  <p style="color:#666; margin-top:0;">
+    The processing function crosses <code>kL</code> at
+    <code>r_cross = 0.033456</code>, between Z and H. Below are
+    11 input particles (blue) with charge <b style="color:#4C72B0">-5/3</b>.
+    Above are 2 outputs (H, t; red) with charge <b style="color:#C44E52">+2/3</b>.
+    Total: <b>-1</b>.
+  </p>
+</div>
+"""))
+
+display(dropdown)
+display(out)
+render()
+
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1100px; line-height:1.55; color:#444;
+            margin-top:18px; padding:14px 18px; background:#FAFAFA;
+            border-left:4px solid #C44E52; border-radius:4px;">
+  <b>How to read the figure</b><br>
+  <b>Left panel:</b> m_f(r) with the crossover at kL (dashed).
+  Blue = inputs, red = outputs.<br>
+  <b>Middle panel:</b> each particle's charge as a function of r.<br>
+  <b>Right panel:</b> cumulative charge. Starts at 0, reaches
+  <b>-5/3</b> by the crossover, finishes at <b>-1</b>.<br><br>
+  <span style="color:#666; font-size:13px;">
+  The -5/3 and +2/3 values match the two-mesh split from the
+  8×8 torus (outer mesh: +2/3, middle mesh: -5/3).
+  </span>
+</div>
+"""))
+
+# Summary tables
+def color_for_charge(q):
+    return "#4C72B0" if q > 0 else ("#C44E52" if q < 0 else "#888")
+
+def rows_for(entries):
+    out = ""
+    for p, r, q in entries:
+        out += f"""<tr>
+          <td style="padding:5px 12px; border-bottom:1px solid #EEE;"><b>{p}</b></td>
+          <td style="padding:5px 12px; border-bottom:1px solid #EEE; font-family:monospace;">{r:.6f}</td>
+          <td style="padding:5px 12px; border-bottom:1px solid #EEE;">{m_f(r):.4f}</td>
+          <td style="padding:5px 12px; border-bottom:1px solid #EEE; color:{color_for_charge(q)};">{q:+.4f}</td>
+        </tr>"""
+    return out
+
+display(widgets.HTML(f"""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1100px; margin-top:18px;
+            display:flex; gap:20px; flex-wrap:wrap;">
+  <div style="flex:1; min-width:340px; padding:14px 18px;
+              background:#FAFAFA; border-left:4px solid #4C72B0;
+              border-radius:4px;">
+    <b>Input sector</b> (r &lt; {r_cross:.6f})
+    <table style="border-collapse:collapse; margin-top:8px; font-size:13px; width:100%;">
+      <tr style="background:#EEE;">
+        <th style="padding:6px 12px; text-align:left;">Particle</th>
+        <th style="padding:6px 12px; text-align:left;">ratio</th>
+        <th style="padding:6px 12px; text-align:left;">m_f(r)</th>
+        <th style="padding:6px 12px; text-align:left;">charge</th>
+      </tr>
+      {rows_for(inputs)}
+      <tr style="background:#EEF; font-weight:bold;">
+        <td style="padding:6px 12px;">TOTAL</td>
+        <td style="padding:6px 12px;">—</td>
+        <td style="padding:6px 12px;">—</td>
+        <td style="padding:6px 12px; color:{color_for_charge(input_charge)};">{input_charge:+.4f}</td>
+      </tr>
+    </table>
+  </div>
+  <div style="flex:1; min-width:340px; padding:14px 18px;
+              background:#FAFAFA; border-left:4px solid #C44E52;
+              border-radius:4px;">
+    <b>Output sector</b> (r &ge; {r_cross:.6f})
+    <table style="border-collapse:collapse; margin-top:8px; font-size:13px; width:100%;">
+      <tr style="background:#EEE;">
+        <th style="padding:6px 12px; text-align:left;">Particle</th>
+        <th style="padding:6px 12px; text-align:left;">ratio</th>
+        <th style="padding:6px 12px; text-align:left;">m_f(r)</th>
+        <th style="padding:6px 12px; text-align:left;">charge</th>
+      </tr>
+      {rows_for(outputs)}
+      <tr style="background:#FEE; font-weight:bold;">
+        <td style="padding:6px 12px;">TOTAL</td>
+        <td style="padding:6px 12px;">—</td>
+        <td style="padding:6px 12px;">—</td>
+        <td style="padding:6px 12px; color:{color_for_charge(output_charge)};">{output_charge:+.4f}</td>
+      </tr>
+    </table>
+  </div>
+</div>
+"""))
+
+display(widgets.HTML(f"""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1100px; margin-top:14px; padding:14px 18px;
+            background:#FFF; border:2px solid #333;
+            border-radius:4px; text-align:center;">
+  <b style="font-size:16px;">Charge balance:</b>
+  <span style="font-size:15px; margin-left:8px;">
+    input {input_charge:+.4f} + output {output_charge:+.4f} =
+    <b style="color:#C44E52; font-size:17px;">{total_charge:+.4f}</b>
+  </span>
+  <div style="margin-top:6px; color:#666; font-size:13px;">
+    Total = -1, exactly the electron's charge. Matches the two-mesh split.
+  </div>
+</div>
+"""))
+
+print("\nDone.")
