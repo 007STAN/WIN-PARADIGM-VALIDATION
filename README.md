@@ -1,5 +1,7 @@
 Four Dimension Lattice Model (FDLM)
 
+****The WIN Paradigm is now being referred to as the Four Dimension Lattice Model to more accurately represent the findings. All WIN papers led to the latest research and the newer papers will be titled appropriately to reflect the change.**** NEW
+
 A Dimensional-Reduction Framework Deriving the Standard Model from the Spacetime Dimension
 
 Author: Stanley Preschutti (Information Physics Institute)
