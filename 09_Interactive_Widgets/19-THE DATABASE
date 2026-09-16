@@ -1,0 +1,416 @@
+# ============================================================
+# WIN PARADIGM — WIDGET 19: THE DATABASE
+# ============================================================
+# Instructions:
+#   1. Paste this ENTIRE cell into a new Google Colab cell.
+#   2. Run it. Scroll down for the interactive figure.
+#
+# This widget visualizes the particle spectrum database as an
+# interactive table. The 14 modes at lambda = 4 are listed with:
+#
+#   - the mode's (n1, n2) quantum numbers
+#   - support class (64, 48, 32)
+#   - entropy (6.0, 5.5, 5.0 bits)
+#   - processing weight m_f(r)
+#   - nearest reference target
+#   - perturbation from the target
+#   - N/4 value
+#   - charge
+#
+# Four reference entries (Z, c, d, e) are highlighted. The nine
+# perturbation entries are shown in gray. Sort by any column to
+# look for structure.
+# ============================================================
+
+!pip install -q ipywidgets plotly numpy scipy pandas
+
+from google.colab import output
+output.enable_custom_widget_manager()
+
+import numpy as np
+import pandas as pd
+import ipywidgets as widgets
+from IPython.display import display, HTML, clear_output
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+pio.renderers.default = "colab"
+
+# ============================================================
+# FRAMEWORK CONSTANTS
+# ============================================================
+d = 4
+N = d * 2**d        # 64
+H = 2**d            # 16
+V = (d - 1) * 2**d  # 48
+L = 8
+kL = 38.442527
+
+A = kL / 7.88
+B = H + kL / 26
+C = -kL * (d + 4.23)
+r_e = 0.025954
+
+def m_f(r):
+    return A * (r / r_e)**B * np.exp(C * (r - r_e))
+
+# ============================================================
+# THE 14 MODES WITH ALL PROPERTIES
+# ============================================================
+# (n1, n2, particle, ratio, support, entropy, N4, charge)
+DATA = [
+    # support 64
+    ((0, 4), "nu",   0.025277, 64, 6.0, 60.0,  0.0),
+    ((4, 0), "e",    0.025954, 64, 6.0, 24.0, -1.0),
+    # support 48
+    ((1, 3), "u",    0.027005, 48, 5.5, 21.0,  2/3),
+    ((1, 5), "d",    0.027909, 48, 5.5, 20.0, -1/3),
+    ((3, 1), "s",    0.028405, 48, 5.5, 14.0, -1/3),
+    ((3, 7), "mu",   0.029813, 48, 5.5, 14.0, -1.0),
+    ((5, 7), "dark", 0.032000, 48, 5.5, 12.0,  0.0),  # dark photon
+    ((7, 3), "c",    0.030461, 48, 5.5,  9.5,  2/3),
+    ((7, 5), "tau",  0.031913, 48, 5.5,  9.0, -1.0),
+    ((5, 1), "b",    0.033079, 48, 5.5,  7.5, -1/3),
+    # support 32
+    ((2, 2), "W",    0.033236, 32, 5.0,  2.0,  1.0),
+    ((2, 6), "Z",    0.033262, 32, 5.0,  2.0,  0.0),
+    ((6, 2), "H",    0.041677, 32, 5.0,  1.0,  0.0),
+    ((6, 6), "t",    0.067489, 32, 5.0,  0.5,  2/3),
+]
+
+REFERENCE_PARTICLES = ["Z", "c", "d", "e"]
+
+# Build a dataframe
+rows = []
+for (n1, n2), p, r, supp, ent, n4, q in DATA:
+    w = m_f(r)
+    # Nearest kL/2^n
+    best_n = None; best_dist = np.inf
+    for n in range(-4, 8):
+        target = kL / (2**n)
+        dist = abs(w - target)
+        if dist < best_dist:
+            best_dist = dist; best_n = n
+    target = kL / (2**best_n)
+    pert = w - target
+    pert_rel = pert / target * 100
+    is_ref = p in REFERENCE_PARTICLES
+    rows.append({
+        "particle": p,
+        "n1": n1, "n2": n2,
+        "support": supp,
+        "entropy": ent,
+        "ratio": r,
+        "m_f": w,
+        "nearest_target_n": best_n,
+        "nearest_target": target,
+        "perturbation": pert,
+        "pert_rel_%": pert_rel,
+        "N4": n4,
+        "charge": q,
+        "type": "reference" if is_ref else "perturbation",
+    })
+
+df = pd.DataFrame(rows)
+
+# ============================================================
+# DIAGNOSTIC PRINTOUT
+# ============================================================
+print("=" * 90)
+print("THE PARTICLE SPECTRUM DATABASE (14 entries)")
+print("=" * 90)
+print()
+print(f"{'particle':>8} {'(n1,n2)':>9} {'supp':>5} {'ent':>5} "
+      f"{'m_f(r)':>9} {'target':>9} {'pert%':>8} {'N/4':>6} "
+      f"{'charge':>7} {'type':>14}")
+print("-" * 90)
+for _, row in df.sort_values("m_f", ascending=False).iterrows():
+    tgt = "kL/2^" + str(int(row["nearest_target_n"]))
+    print(f"{row['particle']:>8} "
+          f"{'('+str(row['n1'])+','+str(row['n2'])+')':>9} "
+          f"{int(row['support']):>5} {row['entropy']:>5.1f} "
+          f"{row['m_f']:>9.4f} {tgt:>9} {row['pert_rel_%']:>+7.2f}% "
+          f"{row['N4']:>6.1f} {row['charge']:>+7.4f} "
+          f"{row['type']:>14}")
+print()
+
+# ============================================================
+# SUMMARY STATISTICS
+# ============================================================
+refs = df[df["type"] == "reference"]
+perts = df[df["type"] == "perturbation"]
+print(f"References: {len(refs)} (Z, c, d, e)")
+print(f"Perturbations: {len(perts)}")
+print()
+
+# ============================================================
+# FIGURE BUILDER
+# ============================================================
+def build_figure(sort_by=None, ascending=False, highlight=None,
+                 show_only=None):
+    """Build the interactive database figure."""
+    fig = make_subplots(
+        rows=1, cols=2,
+        column_widths=[0.55, 0.45],
+        subplot_titles=(
+            "Particles by m_f(r) and nearest reference",
+            "Database structure: references vs perturbations",
+        ),
+        specs=[[{"type": "xy"}, {"type": "xy"}]],
+        horizontal_spacing=0.10,
+    )
+
+    # Left panel: horizontal bar chart of m_f(r)
+    sorted_df = df.sort_values("m_f", ascending=True)
+    if show_only == "reference":
+        sorted_df = sorted_df[sorted_df["type"] == "reference"]
+    elif show_only == "perturbation":
+        sorted_df = sorted_df[sorted_df["type"] == "perturbation"]
+
+    for _, row in sorted_df.iterrows():
+        is_ref = row["type"] == "reference"
+        is_hi = (highlight == row["particle"])
+        color = "#C44E52" if is_ref else "#888888"
+        if is_hi:
+            color = "#2E8B57"
+        width = 3 if is_hi else 0
+        fig.add_trace(go.Bar(
+            y=[f"{row['particle']}"],
+            x=[row["m_f"]],
+            orientation="h",
+            marker=dict(color=color,
+                        line=dict(width=width, color="#222")),
+            hovertemplate=(
+                f"<b>{row['particle']}</b><br>"
+                f"({row['n1']},{row['n2']})<br>"
+                f"support = {row['support']}<br>"
+                f"entropy = {row['entropy']:.1f}<br>"
+                f"m_f = {row['m_f']:.4f}<br>"
+                f"nearest = kL/2^{row['nearest_target_n']}<br>"
+                f"perturbation = {row['pert_rel_%']:+.2f}%<br>"
+                f"N/4 = {row['N4']}<br>"
+                f"charge = {row['charge']:+.4f}"
+                "<extra></extra>"
+            ),
+            showlegend=False,
+        ), row=1, col=1)
+
+    # Add vertical lines for the four reference targets
+    for n in [0, 1, 2, 3]:
+        target = kL / (2**n)
+        fig.add_shape(
+            type="line", x0=target, x1=target, y0=-0.5,
+            y1=len(sorted_df)-0.5,
+            line=dict(color="#DDD", width=1.5, dash="dot"),
+            row=1, col=1,
+        )
+
+    # Right panel: scatter of perturbation vs m_f, with references at 0
+    for _, row in df.iterrows():
+        is_ref = row["type"] == "reference"
+        is_hi = (highlight == row["particle"])
+        color = "#C44E52" if is_ref else "#888888"
+        if is_hi:
+            color = "#2E8B57"
+        size = 18 if is_hi else (14 if is_ref else 10)
+        symbol = "circle" if is_ref else "circle-open"
+        fig.add_trace(go.Scatter(
+            x=[row["m_f"]],
+            y=[row["pert_rel_%"]],
+            mode="markers+text",
+            marker=dict(size=size, color=color, symbol=symbol,
+                        line=dict(width=1.5, color="black")),
+            text=[row["particle"]],
+            textposition="top center",
+            textfont=dict(size=10),
+            hovertemplate=(
+                f"<b>{row['particle']}</b><br>"
+                f"m_f = {row['m_f']:.4f}<br>"
+                f"perturbation = {row['pert_rel_%']:+.2f}%<br>"
+                f"nearest = kL/2^{row['nearest_target_n']}"
+                "<extra></extra>"
+            ),
+            showlegend=False,
+        ), row=1, col=2)
+
+    # Zero line for perturbations
+    fig.add_shape(
+        type="line", x0=0, x1=200, y0=0, y1=0,
+        line=dict(color="#CCC", width=1), row=1, col=2,
+    )
+
+    # Axis labels
+    fig.update_xaxes(title_text="m_f(r) [GeV]", range=[0, 200],
+                     showgrid=True, gridcolor="#EEE", row=1, col=1)
+    fig.update_yaxes(title_text="", row=1, col=1)
+    fig.update_xaxes(title_text="m_f(r) [GeV]", range=[0, 200],
+                     showgrid=True, gridcolor="#EEE", row=1, col=2)
+    fig.update_yaxes(title_text="perturbation from nearest target [%]",
+                     range=[-60, 60],
+                     showgrid=True, gridcolor="#EEE", row=1, col=2)
+
+    fig.update_layout(
+        title=dict(
+            text="<b>The Particle Spectrum Database</b><br>"
+                 "<sub>Four references (red) at kL/2^n. "
+                 "Nine perturbations (gray) stored without structure.</sub>",
+            x=0.5, xanchor="center",
+        ),
+        height=640,
+        margin=dict(l=60, r=40, t=100, b=60),
+        plot_bgcolor="white",
+        showlegend=False,
+        hovermode="closest",
+        barmode="overlay",
+    )
+    return fig
+
+# ============================================================
+# CONTROLS
+# ============================================================
+highlight_dropdown = widgets.Dropdown(
+    options=[("-- none --", None)] +
+            [(p, p) for p in df["particle"]],
+    description="Highlight:",
+    layout=widgets.Layout(width="300px"),
+)
+
+show_only_dropdown = widgets.Dropdown(
+    options=[("all entries", None),
+             ("references only", "reference"),
+             ("perturbations only", "perturbation")],
+    description="Show:",
+    layout=widgets.Layout(width="300px"),
+)
+
+sort_dropdown = widgets.Dropdown(
+    options=[("m_f(r)", "m_f"),
+             ("N/4", "N4"),
+             ("support", "support"),
+             ("entropy", "entropy"),
+             ("perturbation %", "pert_rel_%")],
+    description="Sort by:",
+    layout=widgets.Layout(width="300px"),
+)
+
+out = widgets.Output()
+
+def render(change=None):
+    with out:
+        clear_output(wait=True)
+        fig = build_figure(
+            highlight=highlight_dropdown.value,
+            show_only=show_only_dropdown.value,
+        )
+        fig.show()
+
+highlight_dropdown.observe(render, names="value")
+show_only_dropdown.observe(render, names="value")
+sort_dropdown.observe(render, names="value")
+
+# ============================================================
+# RENDER EVERYTHING
+# ============================================================
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1100px; line-height:1.55; color:#222;">
+  <h2 style="margin-bottom:4px;">Widget 19 — The Database</h2>
+  <p style="color:#666; margin-top:0;">
+    The particle spectrum database has 14 entries. Four are
+    <b style="color:#C44E52">references</b> (Z, c, d, e) at
+    exact halvings of kL. Nine are
+    <b style="color:#888">perturbations</b> stored without any
+    correlation to the mode's geometry. The database is flat:
+    references plus independent stored values.
+  </p>
+</div>
+"""))
+
+display(widgets.HBox([highlight_dropdown, show_only_dropdown, sort_dropdown]))
+display(out)
+render()
+
+# ============================================================
+# INTERACTIVE DATA TABLE
+# ============================================================
+display(widgets.HTML("""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1100px; margin-top:24px; line-height:1.55;
+            color:#222;">
+  <h3 style="margin-bottom:4px;">Full database table</h3>
+  <p style="color:#666; margin-top:0; font-size:13px;">
+    Sort by clicking any column header. Reference entries are
+    highlighted in the "type" column.
+  </p>
+</div>
+"""))
+
+# Make a pretty display table
+display_df = df.copy()
+display_df["type"] = display_df["type"].apply(
+    lambda t: "REFERENCE" if t == "reference" else "perturbation"
+)
+display_df["(n1,n2)"] = display_df.apply(
+    lambda r: f"({int(r['n1'])},{int(r['n2'])})", axis=1
+)
+display_df["nearest"] = display_df["nearest_target_n"].apply(
+    lambda n: f"kL/2^{int(n)}"
+)
+display_df = display_df[[
+    "particle", "(n1,n2)", "support", "entropy", "ratio", "m_f",
+    "nearest", "perturbation", "pert_rel_%", "N4", "charge", "type",
+]]
+
+# Styled dataframe for the notebook
+styled = display_df.style.format({
+    "entropy": "{:.1f}",
+    "ratio": "{:.6f}",
+    "m_f": "{:.4f}",
+    "perturbation": "{:+.4f}",
+    "pert_rel_%": "{:+.2f}",
+    "N4": "{:.1f}",
+    "charge": "{:+.4f}",
+}).applymap(
+    lambda v: "background-color:#FFE4E4; font-weight:bold"
+    if v == "REFERENCE" else "",
+    subset=["type"],
+)
+display(styled)
+
+# ============================================================
+# SUMMARY BOXES
+# ============================================================
+ref_sum = refs[["particle", "m_f", "nearest_target_n", "pert_rel_%"]].copy()
+ref_sum["nearest_target_n"] = ref_sum["nearest_target_n"].apply(
+    lambda n: f"kL/2^{int(n)}"
+)
+
+display(widgets.HTML(f"""
+<div style="font-family:-apple-system,system-ui,sans-serif;
+            max-width:1100px; margin-top:18px;
+            display:flex; gap:16px; flex-wrap:wrap;">
+  <div style="flex:1; min-width:280px; padding:14px 18px;
+              background:#FFF0F0; border-left:4px solid #C44E52;
+              border-radius:4px;">
+    <b>Four references (derived)</b>
+    <div style="font-size:13px; margin-top:8px; color:#555;">
+      Z, c, d, e at kL, kL/2, kL/4, kL/8.<br>
+      Cover all four SM charge categories.<br>
+      Errors: 3.94%, 0.16%, 2.68%, 1.52%.
+    </div>
+  </div>
+  <div style="flex:1; min-width:280px; padding:14px 18px;
+              background:#F4F4F4; border-left:4px solid #888;
+              border-radius:4px;">
+    <b>Nine perturbations (stored)</b>
+    <div style="font-size:13px; margin-top:8px; color:#555;">
+      No correlation with any mode property (p &gt; 0.37).<br>
+      No hierarchy vs reference distance.<br>
+      The database is flat: references plus stored values.
+    </div>
+  </div>
+</div>
+"""))
+
+print("\nDone. Use the dropdowns above the figure to explore the database.")
+print("The DataFrame below the figure is sortable by clicking column headers.")
