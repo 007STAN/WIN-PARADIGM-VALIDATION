@@ -1,0 +1,120 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{hyperref}
+
+\geometry{margin=1in}
+
+\title{\textbf{Orbit Decomposition and Mean-Field Chemical Potential Shifts at the Spectral Midpoint of the $\mathbb{Z}_8 \times \mathbb{Z}_8$ Lattice}}
+\author{\textbf{Stanley Preschutti} \\
+\small Information Physics Institute \\
+\small ORCID: 0009-0004-5445-1744}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We analyze the 14-fold degenerate spectral midpoint ($\lambda = 4$) of the discrete Laplacian on an $8 \times 8$ periodic square lattice ($\mathbb{Z}_8 \times \mathbb{Z}_8$). The point-group symmetries of this geometry partition the midpoint eigenspace into three disjoint $D_4$ orbits of dimensions 2, 8, and 4. We prove via an analytical theorem that the exact Inverse Participation Ratios (IPR) of the corresponding real spatial standing waves are dictated by the orbit structure, yielding a strict hierarchical spectrum of $2/128$, $3/128$, and $4/128$. Applying the mean-field (Hartree) approximation for the discrete nonlinear Schrödinger equation (DNLS), we demonstrate to leading order in $U$ that local interactions lift the 14-fold degeneracy, generating a strictly ordered, equidistant three-level splitting in the chemical potential.
+\end{abstract}
+
+\section{Introduction}
+
+The spectral properties of discrete Laplacians on finite periodic tori are foundational to lattice models in condensed matter, particularly in the study of discrete nonlinear wave dynamics and Bose-Einstein condensates [1, 2]. This note presents a mathematical analysis of the mode structure specifically on the $\mathbb{Z}_8 \times \mathbb{Z}_8$ lattice. Whether this specific lattice geometry and its midpoint degeneracy are physically realized in a specific experimental platform (such as a photonic array or optical lattice) is not addressed here.
+
+Instead, we focus on transitioning from the exact kinematics of this discrete lattice to its interacting dynamics. We explicitly calculate and prove the Inverse Participation Ratio (IPR) for the delocalized real standing waves within each $D_4$ symmetry orbit of the spectral midpoint. We then place these states within the physical context of the discrete nonlinear Schrödinger equation (DNLS) [3]. We show that in the mean-field approximation, the non-linear interaction induces mode-dependent chemical potential shifts directly proportional to the IPR. This provides an algebraic mechanism for splitting the 14-mode eigenspace into three distinct, evenly spaced levels based entirely on their discrete concentration on the $\mathbb{Z}_8 \times \mathbb{Z}_8$ grid.
+
+\section{Midpoint Eigenspace and Orbit Decomposition}
+
+Consider a free complex scalar amplitude defined on a two-dimensional periodic square lattice $\Lambda = \mathbb{Z}_8 \times \mathbb{Z}_8$ with $N = 64$ sites. The eigenvalues of the discrete nearest-neighbor Laplacian $-\Delta$ are given by:
+\begin{equation}
+\lambda(n_1, n_2) = 4 - 2\cos\left(\frac{\pi n_1}{4}\right) - 2\cos\left(\frac{\pi n_2}{4}\right),
+\end{equation}
+where $n_1, n_2 \in \{0, \dots, 7\}$. The exact spectral midpoint $\lambda = 4$ hosts 14 degenerate modes. Setting $\lambda(n_1, n_2) = 4$ gives $\cos(\pi n_1 / 4) + \cos(\pi n_2 / 4) = 0$. On $\{0, \dots, 7\}^2$, the values of $\cos(\pi n / 4)$ are $\{1, \sqrt{2}/2, 0, -\sqrt{2}/2, -1, -\sqrt{2}/2, 0, \sqrt{2}/2\}$. The condition $\cos(\pi n_1 / 4) = -\cos(\pi n_2 / 4)$ is satisfied by exactly 14 pairs $(n_1, n_2)$. Among $L \times L$ tori, this specific 14-fold degeneracy at the spectral midpoint corresponds to the multiplicity $2(L - 1) = 14$ when $L=8$.
+
+The application of the $D_4$ point-group symmetry (lattice rotations and reflections) acting on the momentum coordinates partitions this 14-dimensional eigenspace into three disjoint orbits:
+\begin{itemize}
+    \item \textbf{Orbit 1 ($\mathcal{O}_1$, size 2):} $\{(0,4), (4,0)\}$.
+    \item \textbf{Orbit 2 ($\mathcal{O}_2$, size 8):} $\{(1,3), (1,5), (3,1), (3,7), (5,1), (5,7), (7,3), (7,5)\}$.
+    \item \textbf{Orbit 3 ($\mathcal{O}_3$, size 4):} $\{(2,2), (2,6), (6,2), (6,6)\}$.
+\end{itemize}
+
+\section{Inverse Participation Ratios of the Midpoint Modes}
+
+To quantify the degree of concentration of these modes, we calculate the Inverse Participation Ratio (IPR). For a real scalar field, the natural real-space modes are the standing waves $v(x,y) = A \cos\left(\frac{\pi}{4}(n_1 x + n_2 y)\right)$. The IPR is computed for these standing waves, not for the complex momentum eigenstates $e^{i k \cdot x}$, which have uniform amplitude and $\text{IPR} = 1/64$ for every mode. We determine the normalization constant $A$ such that $\sum_{\Lambda} |v(x,y)|^2 = 1$, and define the IPR as $\text{IPR} = \sum_{\Lambda} |v(x,y)|^4$. 
+
+\textbf{Theorem:} \textit{The Inverse Participation Ratios of the 14 midpoint modes on $\mathbb{Z}_8 \times \mathbb{Z}_8$, classified by their $D_4$ orbit structure, are strictly given by the closed-form rational fractions:}
+\begin{equation}
+\text{IPR}(\mathcal{O}_1) = \frac{2}{128}, \quad \text{IPR}(\mathcal{O}_2) = \frac{3}{128}, \quad \text{IPR}(\mathcal{O}_3) = \frac{4}{128}.
+\end{equation}
+
+\textit{Proof:} 
+The IPR is invariant under $D_4$, since $D_4$ acts as a permutation of the 64 lattice sites and the IPR is a sum over sites. It therefore suffices to compute the IPR for one representative of each orbit. 
+
+For any mode with wave vector $(n_1, n_2)$, the normalization condition is:
+\begin{equation}
+\frac{1}{A^2} = \sum_{x,y=0}^{7} \cos^2\left(\frac{\pi}{4}(n_1 x + n_2 y)\right).
+\end{equation}
+Evaluating this sum over the torus for each orbit type:
+\begin{enumerate}
+    \item \textbf{Orbit 1 ($\mathcal{O}_1$):} $v(x,y) = A \cos(\pi y)$. Since $\cos^2(\pi y) = 1$ everywhere on the integer grid, normalization yields $1/A^2 = 64$, so $A^2 = 1/64$. The fourth-power sum is:
+    \begin{equation}
+    \text{IPR}(\mathcal{O}_1) = 64 \left(\frac{1}{64}\right)^2 = \frac{1}{64} = \frac{2}{128}.
+    \end{equation}
+    \item \textbf{Orbit 3 ($\mathcal{O}_3$):} $v(x,y) = A \cos\left(\frac{\pi}{2}(x+y)\right)$. The squared cosine evaluates to $1$ on 32 sites and $0$ on 32 sites. Normalization yields $1/A^2 = 32$, so $A^2 = 1/32$. The fourth-power sum is:
+    \begin{equation}
+    \text{IPR}(\mathcal{O}_3) = 32 \left(\frac{1}{32}\right)^2 = \frac{1}{32} = \frac{4}{128}.
+    \end{equation}
+    \item \textbf{Orbit 2 ($\mathcal{O}_2$):} $v(x,y) = A \cos\left(\frac{\pi}{4}(x+3y)\right)$. Because $\gcd(3,8)=1$, the map $(x,y) \mapsto (x+3y) \pmod 8$ is surjective with each value hit equally often. Specifically, the squared cosine takes values $1$ (16 sites), $1/2$ (32 sites), and $0$ (16 sites). Normalization gives $1/A^2 = 16(1) + 32(1/2) + 16(0) = 32$, hence $A^2 = 1/32$. Summing the fourth powers ($1$, $1/4$, and $0$):
+    \begin{equation}
+    \text{IPR}(\mathcal{O}_2) = \left(\frac{1}{32}\right)^2 \left[ 16(1) + 32\left(\frac{1}{4}\right) + 16(0) \right] = \frac{24}{1024} = \frac{3}{128}. \quad \square
+    \end{equation}
+\end{enumerate}
+
+The theorem establishes a strict hierarchical concentration spectrum: $\text{IPR}(\mathcal{O}_1) < \text{IPR}(\mathcal{O}_2) < \text{IPR}(\mathcal{O}_3)$.
+
+\section{Mean-Field Chemical Potential Shifts}
+
+In a purely free lattice model, the 14 midpoint modes share the same unperturbed eigenvalue $\lambda = 4$. We now introduce a local on-site interaction, mapping this system to the discrete nonlinear Schrödinger equation (DNLS) representing a complex scalar in the mean-field Bose-Hubbard model:
+\begin{equation}
+H = \sum_{\langle i,j \rangle} \left( v_i^* v_j + \text{c.c.} \right) + \frac{U}{2} \sum_{i \in \Lambda} |v_i|^4,
+\end{equation}
+where $U$ is the local interaction coupling strength.
+
+The IPR calculation of Section 3 is for the real standing-wave modes. The DNLS Hamiltonian is written for a complex scalar; the real standing waves are the real parts of particular complex combinations of the momentum eigenstates. The IPR of these real combinations differs from that of the individual complex momentum eigenstates.
+
+In the mean-field (Hartree) approximation for the DNLS, the effective potential is $V_{\text{eff}}(x) = U|v(x)|^2$. The chemical potential shift (effective energy shift) $\mu_\alpha$ of a stationary state $v_\alpha$ is [3]:
+\begin{equation}
+\mu_\alpha = \langle v_\alpha | (-\Delta + U|v_\alpha|^2) | v_\alpha \rangle = \lambda_\alpha + U \sum_{x \in \Lambda} |v_\alpha(x)|^4 = 4 + U \cdot \text{IPR}_\alpha.
+\end{equation}
+The formula $\mu_\alpha = \lambda_\alpha + U \cdot \text{IPR}_\alpha$ is the leading-order (linear in $U$) mean-field correction. The exact stationary states of the interacting DNLS may differ from the free standing waves at higher order in $U$. Stability of the interacting stationary states is not analyzed here.
+
+Applying the exact IPR values proven in Section 3, the nonlinear interaction explicitly breaks the 14-fold degeneracy. For a repulsive interaction ($U > 0$), the states strictly order by their $D_4$ orbit class:
+\begin{equation}
+\mu(\mathcal{O}_1) = 4 + U \left(\frac{2}{128}\right), \quad \mu(\mathcal{O}_2) = 4 + U \left(\frac{3}{128}\right), \quad \mu(\mathcal{O}_3) = 4 + U \left(\frac{4}{128}\right).
+\end{equation}
+If the interaction is attractive ($U < 0$), the ordering reverses.
+
+The gaps in the chemical potential between these adjacent orbits are exactly identical:
+\begin{equation}
+\Delta \mu_{1,2} = \mu(\mathcal{O}_2) - \mu(\mathcal{O}_1) = \frac{U}{128}, \qquad \Delta \mu_{2,3} = \mu(\mathcal{O}_3) - \mu(\mathcal{O}_2) = \frac{U}{128}.
+\end{equation}
+The equidistance $\Delta \mu_{1,2} = \Delta \mu_{2,3} = U/128$ follows directly from the theorem. Whether the consecutive-integer numerators $2, 3, 4$ have a deeper structural origin is not determined by the present analysis.
+
+\section{Conclusion}
+
+The 14-fold midpoint degeneracy of the $\mathbb{Z}_8 \times \mathbb{Z}_8$ Laplacian provides a distinct geometric testbed. By proving that the exact Inverse Participation Ratios follow the closed-form rational fractions $2/128$, $3/128$, and $4/128$ under $D_4$ orbit symmetry, we establish a rigorous algebraic foundation for mode concentration. In the context of the DNLS mean-field approximation, this geometric concentration governs the nonlinear self-interaction, breaking the 14-fold degeneracy into a three-level chemical potential spectrum. 
+
+The triplet splitting follows from the $D_4$ orbit decomposition. The equidistance $\Delta \mu_{1,2} = \Delta \mu_{2,3} = U/128$ is derived from the theorem. Whether the consecutive-integer numerators $2, 3, 4$ have a deeper structural origin is not determined by the present analysis.
+
+\begin{thebibliography}{99}
+\bibitem{1} F. Wegner, ``Inverse Participation Ratio in $d$ Dimensions,'' \textit{Z. Phys. B} \textbf{36}, 209 (1980).
+\bibitem{2} F. R. Chung, \textit{Spectral Graph Theory} (American Mathematical Society, 1997).
+\bibitem{3} P. G. Kevrekidis, \textit{The Discrete Nonlinear Schrödinger Equation: Mathematical Analysis, Numerical Computations and Physical Perspectives} (Springer, 2009).
+\end{thebibliography}
+
+\end{document}
