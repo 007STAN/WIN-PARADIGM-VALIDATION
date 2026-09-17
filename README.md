@@ -1,6 +1,6 @@
 Four Dimension Lattice Model (FDLM)
 
-****The WIN Paradigm is now being referred to as the Four Dimension Lattice Model to more accurately represent the findings. All WIN papers led to the latest research and the newer papers will be titled appropriately to reflect the change.**** NEW
+****The WIN Paradigm is the theoretical, the FDLM is the proven. Entropia, Entropix, EDF, and SYK papers are theoretical, we are currently in the process of connecting via the Field and Standard Models.
 
 A Dimensional-Reduction Framework Deriving the Standard Model from the Spacetime Dimension
 
