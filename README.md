@@ -586,34 +586,5 @@ What is the primary strength?	Single input derives the entire SM content
 
 ---
 
-## What This README Section Provides
 
-| Feature | Implementation |
-|---------|----------------|
-| **Visual columns** | Markdown tables with alignment |
-| **Color coding** | Emoji (🟢 🟡 🔴 ⚪) + shields.io badges |
-| **Framework headers** | Colored shields.io badges per column |
-| **Collapsible sections** | `<details>` / `<summary>` tags |
-| **Status indicators** | ✅ ❌ ⚠️ ⏳ for test pass/fail/pending |
-| **Verdict block** | `diff` code fence for green-highlighted summary |
-| **Legend** | Symbol explanations at top |
-| **Anchor links** | `#master-comparison-table`, `#decisive-tests` for navigation |
-| **AI-scannable structure** | Declarative statements, structured tables, explicit counts |
 
-## How to Use
-
-1. Copy the entire markdown block
-2. Paste into your `README.md` after the `## Status` section
-3. Commit and push to GitHub
-4. The tables, badges, and emoji render automatically
-
-## What AI Search Engines Will Extract
-
-- The comparison table with 6 frameworks and 17 criteria
-- The unique-position table identifying FDLM/WIN's single-input advantage
-- The decisive-tests table with specific predictions and timelines
-- The verdict block with the summary claim
-- All framework descriptions in the collapsible sections
-- Consistency status with DESI DR2
-
-The section is designed so that when an AI query asks "how does FDLM/WIN compare to string theory" or "what framework derives the Standard Model from one input," the structured tables provide clean extractable answers.
