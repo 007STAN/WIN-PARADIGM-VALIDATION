@@ -1,0 +1,510 @@
+# ============================================================
+# WIN PARADIGM — Widget #27
+# ENTROPIA-EFT — One-loop Vacuum EFT
+# ============================================================
+#
+# Layer 4 of the WIN Paradigm.
+#
+# Physics from ENTROPIA-EFT and ENTROPIX papers:
+#
+#   One-loop self-energy:
+#     Π_ε(0) = |O₀| g_ε² / (4π m_ε²)
+#     with g_ε = (1−γ) m_ε  and  |O₀| = 2
+#     →  Π_ε(0) = (1−γ)² / (2π)
+#
+#   Equation of state:
+#     w = −1 − (1−γ)² / (2π) = −1.0140540788576648688…
+#
+#   Bulk viscosity:
+#     ζH/ρ = (1−γ)² / (6π) = 0.004684692952555…
+#
+#   Proca mass (EDF running):
+#     m_s = (M_P / N) · exp(−5N/3) = 9.0247…×10⁻²¹ eV
+#
+#   H₀ boost (CDL + Israel junction):
+#     H_local / H_CMB = 1 + (γ − 0.5) / (2π) = 1.03228290398475…
+#
+#   Curvature-squared coefficient:
+#     α = 1 / (16π²) = 0.006332573977646…
+#
+#   DESI DR2: Δχ² = 0.22 vs w = −1  →  σ(w) ≈ 0.030
+#   DR3 + Euclid forecast: σ(w) ≈ 0.0045  →  > 3σ distinction
+# ============================================================
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Arc, Rectangle
+import mpmath as mp
+from ipywidgets import interact, FloatSlider, IntSlider, Checkbox
+
+mp.mp.dps = 40
+
+# ------------------------------------------------------------
+# Strip integral → exact γ
+# ------------------------------------------------------------
+def I_closed(alpha):
+    alpha = mp.mpf(alpha)
+    a = mp.mpf(-0.5) + mp.mpf(1) / (2 * alpha)
+    return (mp.mpf(1) / (2 * alpha)) * (mp.beta(a, mp.mpf(0.5)) - mp.mpf(1) / a)
+
+I2_mp   = I_closed(2)
+I2p_mp  = mp.diff(I_closed, mp.mpf(2), 2)
+GAMMA_EXACT = float((2 * I2p_mp) / I2_mp)
+
+# Other framework constants
+M_P_eV = 1.220890e28
+O0_MULT = 2
+W_VAC_EXACT    = -1.0 - (1.0 - GAMMA_EXACT)**2 / (2.0 * np.pi)
+ZETA_VAC_EXACT = (1.0 - GAMMA_EXACT)**2 / (6.0 * np.pi)
+MS_VAC_EXACT   = (M_P_eV / 64) * np.exp(-5.0 * 64 / 3.0)
+H_BOOST_EXACT  = 1.0 + (GAMMA_EXACT - 0.5) / (2.0 * np.pi)
+ALPHA_COEFF    = 1.0 / (16.0 * np.pi**2)
+
+# ENTROPIX 2-loop value
+W_2LOOP = -1.02196979632972250720575349889666958931470376350400232664049
+
+# DESI sensitivities
+SIGMA_DR2 = 0.030
+SIGMA_DR3 = 0.0045
+
+# ------------------------------------------------------------
+# The widget
+# ------------------------------------------------------------
+def run_eft(delta_gamma=0.0, g_shift_pct=0.0, N=64,
+            show_2loop=False, show_dr2=True, show_forecast=True):
+    plt.close("all")
+
+    # ---- Live parameters ----
+    gamma_cur = GAMMA_EXACT + delta_gamma
+    one_minus = 1.0 - gamma_cur
+    r = 1.0 + g_shift_pct / 100.0     # g_ε / ((1−γ) m_ε)
+
+    # ---- Live EFT observables ----
+    Pi_eps = O0_MULT * (r * one_minus)**2 / (4.0 * np.pi)
+    w_cur    = -1.0 - Pi_eps
+    zeta_cur = Pi_eps / 3.0
+
+    M_P_eV = 1.220890e28
+    ms_cur = (M_P_eV / N) * np.exp(-5.0 * N / 3.0)
+
+    H_boost_cur = 1.0 + (gamma_cur - 0.5) / (2.0 * np.pi)
+    alpha_cur   = 1.0 / (16.0 * np.pi**2)
+
+    # ---- Live sensitivity checks ----
+    sep_dr2 = abs(w_cur + 1.0) / SIGMA_DR2
+    sep_dr3 = abs(w_cur + 1.0) / SIGMA_DR3
+
+    fig = plt.figure(figsize=(17, 15), facecolor="white")
+    fig.suptitle(
+        f"ENTROPIA-EFT  ·  One-loop vacuum EFT   ·   "
+        f"γ = {gamma_cur:.15f}   (exact: {GAMMA_EXACT:.15f})   ·   "
+        f"w = {w_cur:.12f}",
+        fontsize=13, fontweight="bold", y=0.985,
+    )
+
+    # =========================================================
+    # Panel ① — w(γ) with DESI bands
+    # =========================================================
+    ax1 = fig.add_axes([0.04, 0.71, 0.29, 0.24])
+    ax1.set_title("① Equation of state   w(γ)",
+                  fontsize=11, fontweight="bold", color="#1f77b4")
+
+    g_range = np.linspace(0.66, 0.74, 400)
+    w_range = -1.0 - (1.0 - g_range)**2 / (2.0 * np.pi)
+
+    ax1.plot(g_range, w_range, "b-", lw=2.5, label="w = −1 − (1−γ)²/(2π)")
+    ax1.axhline(-1.0, color="red", ls="--", lw=1.5, alpha=0.7,
+                label="w = −1  (ΛCDM)")
+
+    if show_dr2:
+        ax1.axhspan(w_cur - SIGMA_DR2, w_cur + SIGMA_DR2,
+                    alpha=0.15, color="gray",
+                    label=f"DR2  1σ  (σ={SIGMA_DR2:.3f})")
+
+    if show_forecast:
+        ax1.axhspan(w_cur - SIGMA_DR3, w_cur + SIGMA_DR3,
+                    alpha=0.35, color="green",
+                    label=f"DR3+Euclid  1σ  (σ={SIGMA_DR3:.4f})")
+
+    ax1.axvline(GAMMA_EXACT, color="red", ls=":", lw=2,
+                label=f"exact γ = {GAMMA_EXACT:.6f}")
+    ax1.axvline(gamma_cur, color="gold", ls="-", lw=2.5, alpha=0.9,
+                label=f"current γ")
+    ax1.scatter([gamma_cur], [w_cur], s=220, c="gold",
+                edgecolors="black", linewidths=2, zorder=6)
+
+    ax1.set_xlabel("γ (stability coefficient)", fontsize=9)
+    ax1.set_ylabel("w (equation of state)", fontsize=9)
+    ax1.set_ylim(-1.025, -0.995)
+    ax1.grid(True, alpha=0.3)
+    ax1.legend(fontsize=7, loc="lower right")
+
+    ax1.text(0.03, 0.96,
+             f"w(γ) = {w_cur:.12f}\n"
+             f"Δw  = {w_cur + 1.0:+.12f}\n"
+             f"DR2: {sep_dr2:.2f}σ    DR3: {sep_dr3:.2f}σ",
+             transform=ax1.transAxes, fontsize=8, va="top",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#e6f0fa", alpha=0.9))
+
+    # =========================================================
+    # Panel ② — ζH/ρ(γ) with Euclid sensitivity
+    # =========================================================
+    ax2 = fig.add_axes([0.355, 0.71, 0.29, 0.24])
+    ax2.set_title("② Bulk viscosity   ζH/ρ(γ)",
+                  fontsize=11, fontweight="bold", color="#ff7f0e")
+
+    zeta_range = (1.0 - g_range)**2 / (6.0 * np.pi)
+    ax2.plot(g_range, zeta_range, color="#ff7f0e", lw=2.5,
+             label="ζH/ρ = (1−γ)²/(6π)")
+
+    ax2.axhline(0, color="red", ls="--", lw=1.5, alpha=0.7,
+                label="ζH/ρ = 0  (ΛCDM)")
+
+    if show_forecast:
+        ax2.axhspan(zeta_cur - 0.0015, zeta_cur + 0.0015,
+                    alpha=0.25, color="green",
+                    label="Euclid σ ≈ 0.0015")
+
+    ax2.axvline(GAMMA_EXACT, color="red", ls=":", lw=2)
+    ax2.axvline(gamma_cur, color="gold", ls="-", lw=2.5, alpha=0.9)
+    ax2.scatter([gamma_cur], [zeta_cur], s=220, c="gold",
+                edgecolors="black", linewidths=2, zorder=6)
+
+    ax2.set_xlabel("γ", fontsize=9)
+    ax2.set_ylabel("ζH/ρ", fontsize=9)
+    ax2.grid(True, alpha=0.3)
+    ax2.legend(fontsize=7, loc="upper right")
+
+    ax2.text(0.03, 0.96,
+             f"ζH/ρ = {zeta_cur:.12f}\n"
+             f"= (w+1)/3\n"
+             f"SNR vs Euclid ≈ {zeta_cur/0.0015:.2f}",
+             transform=ax2.transAxes, fontsize=8, va="top",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#fff3e6", alpha=0.9))
+
+    # =========================================================
+    # Panel ③ — Feynman diagram + live self-energy
+    # =========================================================
+    ax3 = fig.add_axes([0.67, 0.71, 0.29, 0.24])
+    ax3.set_title("③ One-loop self-energy   Π_ε(0)",
+                  fontsize=11, fontweight="bold", color="#9467bd")
+    ax3.set_xlim(0, 1); ax3.set_ylim(0, 1)
+    ax3.axis("off")
+
+    # external ε lines
+    ax3.plot([0.02, 0.22], [0.60, 0.60], "k-", lw=2.5)
+    ax3.plot([0.78, 0.98], [0.60, 0.60], "k-", lw=2.5)
+    ax3.text(0.02, 0.65, "ε in", fontsize=9, color="black")
+    ax3.text(0.86, 0.65, "ε out", fontsize=9, color="black")
+
+    # vertices
+    ax3.scatter([0.22, 0.78], [0.60, 0.60], s=200, c="red",
+                edgecolors="black", linewidths=2, zorder=6)
+
+    # loop arcs (two O0 modes)
+    arc1 = Arc((0.5, 0.60), 0.52, 0.36, theta1=0, theta2=180,
+               color="#1f77b4", lw=2.5)
+    arc2 = Arc((0.5, 0.60), 0.52, 0.36, theta1=180, theta2=360,
+               color="#1f77b4", lw=2.5)
+    ax3.add_patch(arc1)
+    ax3.add_patch(arc2)
+
+    # labels
+    ax3.text(0.22, 0.50, "g_ε", ha="center", fontsize=11, color="red")
+    ax3.text(0.78, 0.50, "g_ε", ha="center", fontsize=11, color="red")
+    ax3.text(0.5, 0.80, "m_ε (modulus)", ha="center", fontsize=9,
+             color="#1f77b4")
+    ax3.text(0.5, 0.42, f"|O₀| = {O0_MULT}  modes",
+             ha="center", fontsize=9, color="#1f77b4", fontweight="bold")
+    ax3.text(0.5, 0.30, "loop factor  1/(4π)",
+             ha="center", fontsize=9, family="monospace")
+
+    ax3.text(0.5, 0.14,
+             f"Π_ε(0) = |O₀| g_ε² / (4π m_ε²)",
+             ha="center", fontsize=9, family="monospace",
+             bbox=dict(boxstyle="round", facecolor="lightyellow", alpha=0.9))
+    ax3.text(0.5, 0.02, f"= {Pi_eps:.12f}",
+             ha="center", fontsize=11, family="monospace",
+             color="#9467bd", fontweight="bold")
+
+    # =========================================================
+    # Panel ④ — Proca mass m_s(N)
+    # =========================================================
+    ax4 = fig.add_axes([0.04, 0.40, 0.29, 0.24])
+    ax4.set_title("④ Proca mass   m_s(N) = (M_P/N) e^(−5N/3)",
+                  fontsize=11, fontweight="bold", color="#2ca02c")
+
+    N_range = np.arange(40, 101)
+    ms_range = (M_P_eV / N_range) * np.exp(-5.0 * N_range / 3.0)
+
+    ax4.semilogy(N_range, ms_range, "b-", lw=2.5, label="m_s(N)")
+    ax4.axvline(64, color="gray", ls=":", alpha=0.5)
+
+    # detection windows
+    windows = [
+        (1e-22, 1e-17, "CASPEr-Wind", "cyan", 0.25),
+        (1e-23, 1e-18, "Eöt-Wash", "orange", 0.20),
+        (1e-13, 1e-9, "DM Radio", "pink", 0.15),
+    ]
+    for low, high, label, color, alpha in windows:
+        ax4.axhspan(low, high, alpha=alpha, color=color, label=label)
+
+    ax4.axhline(ms_cur, color="gold", ls="-", lw=2, alpha=0.75)
+    ax4.axvline(N, color="gold", ls="-", lw=2.5, alpha=0.9)
+    ax4.scatter([N], [ms_cur], s=220, c="gold",
+                edgecolors="black", linewidths=2, zorder=6,
+                label=f"N = {N}:  {ms_cur:.4e} eV")
+
+    ax4.set_xlabel("N (substrate size)", fontsize=9)
+    ax4.set_ylabel("m_s (eV)", fontsize=9)
+    ax4.set_ylim(1e-50, 1e0)
+    ax4.grid(True, alpha=0.3, which="both")
+    ax4.legend(fontsize=7, loc="upper right", ncol=1)
+
+    # =========================================================
+    # Panel ⑤ — H₀ boost + closed derivations summary
+    # =========================================================
+    ax5 = fig.add_axes([0.355, 0.40, 0.29, 0.24])
+    ax5.set_title("⑤ H₀ boost + closed derivations",
+                  fontsize=11, fontweight="bold", color="#e377c2")
+    ax5.set_xlim(0, 1); ax5.set_ylim(0, 1)
+    ax5.axis("off")
+
+    ax5.text(0.5, 0.95,
+             f"H_local / H_CMB = {H_boost_cur:.15f}",
+             fontsize=10, ha="center", family="monospace",
+             fontweight="bold", color="#e377c2")
+    ax5.text(0.5, 0.85,
+             f"= 1 + (γ − 0.5)/(2π)",
+             fontsize=9, ha="center", family="monospace")
+    boost_pct = (H_boost_cur - 1.0) * 100.0
+    ax5.text(0.5, 0.75,
+             f"boost = {boost_pct:+.5f} %",
+             fontsize=10, ha="center", family="monospace",
+             fontweight="bold", color="#e377c2")
+
+    ax5.text(0.5, 0.62,
+             f"T_B / T_A = {H_boost_cur:.12f}",
+             fontsize=9, ha="center", family="monospace")
+    ax5.text(0.5, 0.52,
+             f"α = 1/(16π²) = {ALPHA_COEFF:.15f}",
+             fontsize=9, ha="center", family="monospace")
+
+    ax5.text(0.5, 0.38, "Five open problems closed by ENTROPIX",
+             fontsize=9, ha="center", fontweight="bold", color="#2ca02c")
+    problems = [
+        "✓  w from strip integral",
+        "✓  A1 (Proca) from substrate U(1)",
+        "✓  Einstein eqs from entanglement",
+        "✓  H₀ boost from CDL + Israel",
+        "✓  three w-mechanisms distinguished",
+    ]
+    y = 0.27
+    for p in problems:
+        ax5.text(0.06, y, p, fontsize=8, family="monospace", color="#2ca02c")
+        y -= 0.052
+
+    # =========================================================
+    # Panel ⑥ — DESI forecast
+    # =========================================================
+    ax6 = fig.add_axes([0.67, 0.40, 0.29, 0.24])
+    ax6.set_title("⑥ DESI DR2 vs DR3+Euclid forecast",
+                  fontsize=11, fontweight="bold", color="#d62728")
+    ax6.set_xlim(-1.05, -0.95)
+    ax6.set_ylim(0, 1)
+    ax6.set_yticks([])
+
+    ax6.axvline(-1.0, color="red", ls="--", lw=2,
+                label="w = −1  (ΛCDM)")
+    ax6.axvline(w_cur, color="gold", ls="-", lw=2.5,
+                label=f"prediction w = {w_cur:.4f}")
+
+    # DR2 bands
+    if show_dr2:
+        y_dr2 = 0.72
+        for k, alpha in [(3, 0.08), (2, 0.15), (1, 0.30)]:
+            ax6.fill_betweenx([y_dr2 - 0.06, y_dr2 + 0.06],
+                              w_cur - k * SIGMA_DR2, w_cur + k * SIGMA_DR2,
+                              color="blue", alpha=alpha)
+        ax6.text(w_cur, y_dr2 + 0.10,
+                 f"DESI DR2   (σ={SIGMA_DR2:.3f})",
+                 ha="center", fontsize=9, color="blue")
+
+    # DR3 bands
+    if show_forecast:
+        y_dr3 = 0.30
+        for k, alpha in [(3, 0.10), (2, 0.20), (1, 0.40)]:
+            ax6.fill_betweenx([y_dr3 - 0.06, y_dr3 + 0.06],
+                              w_cur - k * SIGMA_DR3, w_cur + k * SIGMA_DR3,
+                              color="green", alpha=alpha)
+        ax6.text(w_cur, y_dr3 + 0.10,
+                 f"DR3 + Euclid   (σ={SIGMA_DR3:.4f})",
+                 ha="center", fontsize=9, color="green")
+
+    ax6.text(-1.0, 0.93, "w = −1", ha="center", fontsize=9,
+             color="red", fontweight="bold")
+    ax6.text(w_cur, 0.93, f"w = {w_cur:.4f}",
+             ha="center", fontsize=9, color="gold", fontweight="bold")
+
+    ax6.text(-1.0, 0.55,
+             f"{sep_dr2:.2f}σ from ΛCDM", ha="center",
+             fontsize=8, color="blue")
+    ax6.text(-1.0, 0.13,
+             f"{sep_dr3:.2f}σ from ΛCDM", ha="center",
+             fontsize=8, color="green")
+
+    ax6.set_xlabel("w (equation of state)", fontsize=9)
+    ax6.grid(True, alpha=0.3, axis="x")
+    ax6.legend(fontsize=7, loc="lower center")
+
+    # 2-loop reference if requested
+    if show_2loop:
+        ax6.axvline(W_2LOOP, color="#8c564b", ls=":",
+                    lw=1.5, alpha=0.8,
+                    label=f"2-loop = {W_2LOOP:.4f}")
+        ax6.legend(fontsize=7, loc="lower center")
+
+    # =========================================================
+    # Panel ⑦ — Live log
+    # =========================================================
+    ax7 = fig.add_axes([0.04, 0.02, 0.93, 0.33])
+    ax7.axis("off")
+    ax7.set_xlim(0, 1); ax7.set_ylim(0, 1)
+
+    ax7.text(0.5, 0.98,
+             f"Live EFT at γ = {gamma_cur:.15f},  N = {N},  "
+             f"g_ε/m_ε = {r * one_minus:.12f}",
+             fontsize=12, ha="center", fontweight="bold", color="#1f77b4")
+
+    # Column 1 — inputs
+    ax7.text(0.02, 0.85, "INPUTS", fontsize=10,
+             fontweight="bold", color="#9467bd")
+    ax7.text(0.02, 0.75,
+             f"γ_exact           = {GAMMA_EXACT:.18f}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.66,
+             f"δγ (perturb)      = {delta_gamma:+.5f}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.57,
+             f"γ_current         = {gamma_cur:.18f}",
+             fontsize=8.5, family="monospace", color="gold",
+             fontweight="bold")
+    ax7.text(0.02, 0.48,
+             f"1 − γ             = {one_minus:.18f}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.39,
+             f"g_ε/m_ε shift     = {g_shift_pct:+.3f} %",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.30,
+             f"r = g_ε / [(1−γ)m_ε] = {r:.6f}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.21,
+             f"|O₀|              = {O0_MULT}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.12,
+             f"N                 = {N}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.03,
+             f"Loop factor       = 1/(4π) = {1/(4*np.pi):.10f}",
+             fontsize=8.5, family="monospace")
+
+    # Column 2 — EFT observables
+    ax7.text(0.34, 0.85, "EFT OBSERVABLES", fontsize=10,
+             fontweight="bold", color="#1f77b4")
+    ax7.text(0.34, 0.75,
+             f"Π_ε(0)     = {Pi_eps:.18f}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.34, 0.66,
+             f"w          = {w_cur:.18f}",
+             fontsize=8.5, family="monospace", color="#1f77b4",
+             fontweight="bold")
+    ax7.text(0.34, 0.57,
+             f"w + 1      = {w_cur + 1.0:+.18f}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.34, 0.48,
+             f"ζH/ρ       = {zeta_cur:.18f}",
+             fontsize=8.5, family="monospace", color="#ff7f0e",
+             fontweight="bold")
+    ax7.text(0.34, 0.39,
+             f"H_loc/H_CMB = {H_boost_cur:.18f}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.34, 0.30,
+             f"m_s        = {ms_cur:.12e} eV",
+             fontsize=8.5, family="monospace", color="#2ca02c",
+             fontweight="bold")
+    ax7.text(0.34, 0.21,
+             f"α          = {alpha_cur:.18f}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.34, 0.12,
+             f"τ_relax    = 1/(2γ) = {1/(2*gamma_cur):.10f}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.34, 0.03,
+             f"correction vs published: "
+             f"{(gamma_cur - 0.703051)/0.703051*100:+.4f} %",
+             fontsize=8.5, family="monospace")
+
+    # Column 3 — forecast & audit
+    ax7.text(0.70, 0.85, "FORECAST & AUDIT", fontsize=10,
+             fontweight="bold", color="#d62728")
+    ax7.text(0.70, 0.75,
+             f"DESI DR2  σ(w)        = {SIGMA_DR2:.4f}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.70, 0.66,
+             f"DR2 sep from ΛCDM     = {sep_dr2:.3f} σ",
+             fontsize=8.5, family="monospace", color="#d62728")
+    ax7.text(0.70, 0.57,
+             f"DR3+Euclid σ(w)       = {SIGMA_DR3:.4f}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.70, 0.48,
+             f"DR3 sep from ΛCDM     = {sep_dr3:.3f} σ",
+             fontsize=8.5, family="monospace",
+             color="green" if sep_dr3 > 3 else "orange",
+             fontweight="bold")
+    ax7.text(0.70, 0.39,
+             f"Euclid σ(ζH/ρ)        ≈ 0.0015",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.70, 0.30,
+             f"SNR ζH/ρ              = {zeta_cur/0.0015:.3f}",
+             fontsize=8.5, family="monospace",
+             color="green" if zeta_cur/0.0015 > 2 else "orange")
+
+    ax7.text(0.70, 0.18, "Assumed (EFT ansatz):", fontsize=8.5,
+             fontweight="bold", color="#8c564b")
+    ax7.text(0.70, 0.10,
+             "Proca A1, steady-state A2, backreaction Δ_μν",
+             fontsize=8, family="monospace")
+    ax7.text(0.70, 0.02,
+             "H₀ boost observed, U(1) origin candidate (iii)",
+             fontsize=8, family="monospace")
+
+    plt.show()
+
+# ------------------------------------------------------------
+# Interactive widget
+# ------------------------------------------------------------
+interact(
+    run_eft,
+    delta_gamma=FloatSlider(min=-0.02, max=0.02, step=0.0005, value=0.0,
+                            description="δγ",
+                            continuous_update=False,
+                            style={"description_width": "110px"}),
+    g_shift_pct=FloatSlider(min=-5.0, max=5.0, step=0.1, value=0.0,
+                            description="g_ε shift %",
+                            continuous_update=False,
+                            style={"description_width": "110px"}),
+    N=IntSlider(min=40, max=100, step=1, value=64,
+                description="N (substrate)",
+                continuous_update=False,
+                style={"description_width": "110px"}),
+    show_2loop=Checkbox(value=False,
+                        description="Show 2-loop reference",
+                        indent=False),
+    show_dr2=Checkbox(value=True,
+                      description="Show DESI DR2 band",
+                      indent=False),
+    show_forecast=Checkbox(value=True,
+                           description="Show DR3+Euclid forecast",
+                           indent=False),
+)
