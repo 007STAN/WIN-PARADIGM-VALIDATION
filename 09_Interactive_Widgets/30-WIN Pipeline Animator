@@ -1,0 +1,573 @@
+# ============================================================
+# WIN PARADIGM — Widget #30
+# WIN Pipeline Animator v2
+# ============================================================
+#
+# Single λ slider drives the full six-layer chain:
+#
+#   WIN(w=−1) → DME(γ) → Core(L[ε]) → EFT(w,ζ,m_s)
+#            → ENTROPIX(M1,M2) → SYK(antipode)
+#
+# The vacuum fraction
+#
+#   f(λ) = 1 − e^(−4γλ)
+#
+# is the natural progression parameter. It is exactly
+# 1 − (ε(λ)/ε₀)² from the Core gradient flow, so it is
+# not ad hoc — it is the fraction of perturbation decayed.
+#
+# At λ = 0:   bare WIN baseline
+#   w = −1.0000, ζ = 0, m_s = 0, all residuals maximal
+#
+# As λ → ∞:   full DME vacuum
+#   w = −1.0140540788…, ζ = 0.0046846929…, m_s = 9.02×10⁻²¹ eV
+#
+# Play button auto-advances λ and lets you watch the whole
+# pipeline evolve in real time.
+# ============================================================
+
+import numpy as np
+import matplotlib.pyplot as plt
+import mpmath as mp
+from matplotlib.patches import FancyArrowPatch, Rectangle
+from ipywidgets import (interact, FloatSlider, IntSlider, Checkbox,
+                        Button, HBox, VBox, jslink)
+from IPython.display import display
+
+mp.mp.dps = 30
+
+# ------------------------------------------------------------
+# Framework constants — γ from the strip integral
+# ------------------------------------------------------------
+def I_closed(alpha):
+    alpha = mp.mpf(alpha)
+    a = mp.mpf(-0.5) + mp.mpf(1) / (2 * alpha)
+    return (mp.mpf(1) / (2 * alpha)) * (mp.beta(a, mp.mpf(0.5)) - mp.mpf(1) / a)
+
+I2_mp   = I_closed(2)
+I2p_mp  = mp.diff(I_closed, mp.mpf(2), 2)
+GAMMA   = float((2 * I2p_mp) / I2_mp)
+
+M_P_eV = 1.220890e28
+
+# Fixed vacuum targets
+W_VAC    = -1.0 - (1.0 - GAMMA)**2 / (2.0 * np.pi)
+ZETA_VAC = (1.0 - GAMMA)**2 / (6.0 * np.pi)
+MS_VAC   = (M_P_eV / 64) * np.exp(-5.0 * 64 / 3.0)
+H_BOOST  = 1.0 + (GAMMA - 0.5) / (2.0 * np.pi)
+ALPHA_C  = 1.0 / (16.0 * np.pi**2)
+
+# ------------------------------------------------------------
+# Six layers — metadata for the chain visualization
+# ------------------------------------------------------------
+LAYERS = [
+    {"id": 1, "name": "FDLM/WIN",   "color": "#d62728",
+     "short": "w = −1"},
+    {"id": 2, "name": "DME",        "color": "#ff7f0e",
+     "short": "γ"},
+    {"id": 3, "name": "Core",       "color": "#9467bd",
+     "short": "L[ε]"},
+    {"id": 4, "name": "EFT",        "color": "#1f77b4",
+     "short": "w, ζ, m_s"},
+    {"id": 5, "name": "ENTROPIX",   "color": "#2ca02c",
+     "short": "M1, M2"},
+    {"id": 6, "name": "SYK/QIN",    "color": "#e377c2",
+     "short": "antipode"},
+]
+
+# ------------------------------------------------------------
+# Physics functions
+# ------------------------------------------------------------
+def epsilon_of_lambda(lam, eps0):
+    return eps0 * np.exp(-2.0 * GAMMA * lam)
+
+def vacuum_fraction(lam):
+    return float(np.clip(1.0 - np.exp(-4.0 * GAMMA * lam), 0.0, 1.0))
+
+def entropy_well(eps):
+    return 1.0 - GAMMA * eps**2 + eps**4
+
+def lyapunov(eps):
+    return GAMMA * eps**2 + eps**4
+
+def dL_dlambda(eps):
+    return -4.0 * GAMMA**2 * eps**2
+
+def M1_residual(eps):
+    return 4.0 * GAMMA**2 * eps**2 - 8.0 * GAMMA * eps**4
+
+def M2_export(eps):
+    return 4.0 * GAMMA**2 * eps**2
+
+# ------------------------------------------------------------
+# The widget
+# ------------------------------------------------------------
+def run_pipeline(lam=0.0, eps0=0.20, show_log=True):
+    plt.close("all")
+
+    # ---- Live state ----
+    eps  = epsilon_of_lambda(lam, eps0)
+    S    = entropy_well(eps)
+    L    = lyapunov(eps)
+    dL   = dL_dlambda(eps)
+    M1   = M1_residual(eps)
+    M2   = M2_export(eps)
+    vac  = vacuum_fraction(lam)
+
+    # Live EFT values — interpolate from bare WIN to full vacuum
+    w_cur    = -1.0 + (W_VAC    + 1.0) * vac
+    zeta_cur = ZETA_VAC * vac
+    ms_cur   = MS_VAC * vac
+
+    # ---------------------------------------------------------
+    fig = plt.figure(figsize=(17.5, 14.5), facecolor="white")
+    fig.suptitle(
+        f"WIN Pipeline  ·  λ = {lam:.3f}  ·  ε(λ) = {eps:+.8f}  ·  "
+        f"vacuum fraction = {vac * 100:5.2f}%",
+        fontsize=15, fontweight="bold", y=0.988,
+    )
+
+    # =========================================================
+    # ① Chain diagram across the top
+    # =========================================================
+    ax_chain = fig.add_axes([0.04, 0.87, 0.92, 0.10])
+    ax_chain.set_xlim(-0.5, 6.5); ax_chain.set_ylim(-0.5, 1.5)
+    ax_chain.axis("off")
+
+    # Layer boxes
+    for i, layer in enumerate(LAYERS):
+        x = i
+        # box
+        ax_chain.add_patch(Rectangle(
+            (x - 0.35, 0.15), 0.70, 0.75,
+            facecolor=layer["color"], alpha=0.20,
+            edgecolor=layer["color"], linewidth=2.5,
+        ))
+        # fill bar (progress indicator)
+        bar_h = 0.75 * vac
+        ax_chain.add_patch(Rectangle(
+            (x - 0.35, 0.15), 0.70, bar_h,
+            facecolor=layer["color"], alpha=0.65,
+            edgecolor="none",
+        ))
+        # layer number + name
+        ax_chain.text(x, 0.68, f"Layer {layer['id']}",
+                      ha="center", fontsize=8.5, color="black")
+        ax_chain.text(x, 0.47, layer["name"],
+                      ha="center", fontsize=11, fontweight="bold",
+                      color="black")
+        ax_chain.text(x, 0.28, layer["short"],
+                      ha="center", fontsize=9, family="monospace",
+                      color=layer["color"], fontweight="bold")
+
+        # arrow to next
+        if i < len(LAYERS) - 1:
+            ax_chain.annotate(
+                "", xy=(x + 1 - 0.36, 0.52), xytext=(x + 0.36, 0.52),
+                arrowprops=dict(arrowstyle="->", lw=2.0,
+                                color="#666", alpha=0.6),
+            )
+
+    # particle marker on the chain (position from λ)
+    particle_x = 0.5 + 5.0 * vac
+    ax_chain.scatter([particle_x], [1.30], s=300,
+                     marker="o", c="gold", edgecolors="black",
+                     linewidths=2.5, zorder=10)
+    ax_chain.text(particle_x, 1.42, "particle",
+                  ha="center", fontsize=9,
+                  fontweight="bold", color="#b8860b")
+
+    # baseline and target on the ends
+    ax_chain.text(0, -0.25, "bare WIN",
+                  ha="center", fontsize=9, color="#888", style="italic")
+    ax_chain.text(5, -0.25, "full DME vacuum",
+                  ha="center", fontsize=9, color="#888", style="italic")
+
+    # =========================================================
+    # ② Layer 1 — FDLM/WIN substrate (static reference)
+    # =========================================================
+    ax1 = fig.add_axes([0.04, 0.62, 0.29, 0.22])
+    ax1.set_title("① FDLM/WIN substrate",
+                  fontsize=11, fontweight="bold", color="#d62728")
+    ax1.set_xlim(-0.6, 7.6); ax1.set_ylim(-0.6, 7.6)
+    ax1.set_aspect("equal")
+    ax1.set_xticks(range(8)); ax1.set_yticks(range(8))
+    ax1.grid(True, alpha=0.25)
+
+    for i in range(8):
+        for j in range(8):
+            ax1.plot(i, j, ".", color="lightgray", markersize=3)
+
+    mode_14 = [
+        (0, 4, "#d62728"), (4, 0, "#d62728"),
+        (1, 3, "#1f77b4"), (1, 5, "#1f77b4"),
+        (3, 1, "#1f77b4"), (3, 7, "#1f77b4"),
+        (5, 1, "#1f77b4"), (5, 7, "#1f77b4"),
+        (7, 3, "#1f77b4"), (7, 5, "#1f77b4"),
+        (2, 2, "#2ca02c"), (2, 6, "#2ca02c"),
+        (6, 2, "#2ca02c"), (6, 6, "#2ca02c"),
+    ]
+    for n1, n2, col in mode_14:
+        ax1.scatter(n1, n2, s=180, c=col, alpha=0.75,
+                    edgecolors="black", linewidths=1.2, zorder=5)
+
+    ax1.text(0.5, -0.5,
+             "14 modes at λ = 4  ·  baseline w = −1",
+             transform=ax1.transData, ha="center",
+             fontsize=8.5, color="#333")
+
+    # =========================================================
+    # ③ Layer 2 — DME entropy well + particle position
+    # =========================================================
+    ax2 = fig.add_axes([0.36, 0.62, 0.29, 0.22])
+    ax2.set_title("② DME — entropy well  S(ε)/S₀",
+                  fontsize=11, fontweight="bold", color="#ff7f0e")
+
+    e_grid = np.linspace(-0.35, 0.35, 400)
+    S_grid = entropy_well(e_grid)
+    ax2.plot(e_grid, S_grid, "orange", lw=2.5,
+             label="S(ε)/S₀ = 1 − γε² + ε⁴")
+    ax2.axvline(0, color="gray", ls="--", alpha=0.5)
+    ax2.axhline(1.0, color="gray", ls=":", alpha=0.4)
+    ax2.axvline(eps, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax2.scatter([eps], [S], s=240, c="gold",
+                edgecolors="black", linewidths=2, zorder=5)
+    ax2.set_xlabel("ε = D − 4", fontsize=9)
+    ax2.set_ylabel("S(ε)/S₀", fontsize=9)
+    ax2.set_ylim(0.85, 1.01)
+    ax2.grid(True, alpha=0.3)
+    ax2.text(0.03, 0.96,
+             f"γ = {GAMMA:.10f}\n"
+             f"ε(λ) = {eps:+.6f}\n"
+             f"S(ε) = {S:.8f}",
+             transform=ax2.transAxes, fontsize=8, va="top",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#fff3e6",
+                       alpha=0.9))
+
+    # =========================================================
+    # ④ Layer 3 — Core gradient flow
+    # =========================================================
+    ax3 = fig.add_axes([0.68, 0.62, 0.28, 0.22])
+    ax3.set_title("③ Core — gradient flow  ε(λ)",
+                  fontsize=11, fontweight="bold", color="#9467bd")
+
+    lam_grid = np.linspace(0, 4, 400)
+    eps_traj = epsilon_of_lambda(lam_grid, eps0)
+    ax3.plot(lam_grid, eps_traj, "purple", lw=2.5,
+             label="ε(λ) = ε₀ e^(−2γλ)")
+    ax3.fill_between(lam_grid, 0, eps_traj, color="purple", alpha=0.10)
+    ax3.axhline(0, color="gray", ls="--", alpha=0.5)
+    ax3.axvline(lam, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax3.scatter([lam], [eps], s=240, c="gold",
+                edgecolors="black", linewidths=2, zorder=5)
+    ax3.set_xlabel("λ", fontsize=9)
+    ax3.set_ylabel("ε(λ)", fontsize=9)
+    ax3.grid(True, alpha=0.3)
+    ax3.text(0.03, 0.05,
+             f"L(ε)  = {L:.6e}\n"
+             f"dL/dλ = {dL:+.6e}\n"
+             f"τ_relax = {1/(2*GAMMA):.6f}",
+             transform=ax3.transAxes, fontsize=8, va="bottom",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#f3e8ff",
+                       alpha=0.9))
+
+    # =========================================================
+    # ⑤ Layer 4 — EFT live progress bars
+    # =========================================================
+    ax4 = fig.add_axes([0.04, 0.32, 0.29, 0.24])
+    ax4.set_title("④ ENTROPIA-EFT — vacuum approach",
+                  fontsize=11, fontweight="bold", color="#1f77b4")
+    ax4.set_xlim(0, 1); ax4.set_ylim(0, 1); ax4.axis("off")
+
+    ax4.text(0.5, 0.96,
+             f"f(λ) = 1 − e^(−4γλ) = {vac:.6f}",
+             fontsize=9, ha="center", family="monospace",
+             color="#1f77b4")
+
+    bars = [
+        ("w",     w_cur,    W_VAC,    "#1f77b4"),
+        ("ζH/ρ",  zeta_cur, ZETA_VAC, "#ff7f0e"),
+        ("m_s",   ms_cur,   MS_VAC,   "#2ca02c"),
+    ]
+    y0 = 0.74; bar_w = 0.55; bar_h = 0.09; x0 = 0.28
+
+    for sym, val, target, col in bars:
+        ax4.text(0.02, y0 + bar_h/2, sym, fontsize=10,
+                 family="monospace", fontweight="bold",
+                 color=col, va="center")
+        ax4.add_patch(Rectangle((x0, y0), bar_w, bar_h,
+                                facecolor="#eeeeee",
+                                edgecolor="#bbbbbb", linewidth=0.8))
+        ax4.add_patch(Rectangle((x0, y0), bar_w * vac, bar_h,
+                                facecolor=col, edgecolor=col, alpha=0.85))
+        ax4.text(x0 + bar_w + 0.02, y0 + bar_h/2,
+                 f"{val:+.6f}" if abs(val) < 1 else f"{val:.4e}",
+                 fontsize=8.5, family="monospace", va="center")
+        y0 -= 0.18
+
+    ax4.text(0.5, 0.04,
+             "WIN baseline: −1  →  corrected: −1.014054…",
+             fontsize=8.5, ha="center", style="italic", color="#333",
+             bbox=dict(boxstyle="round", facecolor="#e6f0fa", alpha=0.9))
+
+    # =========================================================
+    # ⑥ Layer 5 — ENTROPIX master conditions
+    # =========================================================
+    ax5 = fig.add_axes([0.36, 0.32, 0.29, 0.24])
+    ax5.set_title("⑤ ENTROPIX/MESA — master conditions",
+                  fontsize=11, fontweight="bold", color="#2ca02c")
+
+    M1_grid = np.array([M1_residual(e) for e in eps_traj])
+    M2_grid = np.array([M2_export(e) for e in eps_traj])
+    M1_norm = M1_grid / max(abs(M1_grid).max(), 1e-30)
+    M2_norm = M2_grid / max(abs(M2_grid).max(), 1e-30)
+
+    ax5.plot(lam_grid, M1_norm, color="#d62728", lw=2.5,
+             label="M1  ∂I_eff/∂λ")
+    ax5.plot(lam_grid, M2_norm, color="#2ca02c", lw=2.5,
+             label="M2  ∂D_export/∂λ")
+    ax5.axhline(0, color="black", ls="--", alpha=0.4)
+    ax5.axvline(lam, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax5.scatter([lam], [np.interp(lam, lam_grid, M1_norm)],
+                s=160, c="#d62728", edgecolors="black",
+                linewidths=1.5, zorder=5)
+    ax5.scatter([lam], [np.interp(lam, lam_grid, M2_norm)],
+                s=160, c="#2ca02c", edgecolors="black",
+                linewidths=1.5, zorder=5)
+    ax5.set_xlabel("λ", fontsize=9)
+    ax5.set_ylabel("normalized", fontsize=9)
+    ax5.set_ylim(-0.05, 1.10)
+    ax5.grid(True, alpha=0.3)
+    ax5.legend(fontsize=8, loc="upper right")
+    ax5.text(0.03, 0.05,
+             f"M1 residual = {M1:+.4e}\n"
+             f"M2 export   = {M2:.4e}",
+             transform=ax5.transAxes, fontsize=8, va="bottom",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#e6fae6",
+                       alpha=0.9))
+
+    # =========================================================
+    # ⑦ Layer 6 — SYK/QIN antipode coherence
+    # =========================================================
+    ax6 = fig.add_axes([0.68, 0.32, 0.28, 0.24])
+    ax6.set_title("⑥ SYK/QIN — antipode coherence",
+                  fontsize=11, fontweight="bold", color="#e377c2")
+    ax6.set_xlim(0, 1); ax6.set_ylim(0, 1); ax6.axis("off")
+
+    ax6.text(0.5, 0.96,
+             f"coherence = f(λ) = {vac:.6f}",
+             fontsize=9, ha="center", family="monospace",
+             color="#e377c2")
+
+    bar_x, bar_y = 0.05, 0.84
+    bar_w, bar_h = 0.90, 0.06
+    ax6.add_patch(Rectangle((bar_x, bar_y), bar_w, bar_h,
+                            facecolor="#f0f0f0",
+                            edgecolor="#ccc", linewidth=0.8))
+    ax6.add_patch(Rectangle((bar_x, bar_y), bar_w * vac, bar_h,
+                            facecolor="#e377c2", edgecolor="#e377c2",
+                            alpha=0.9))
+
+    # The 8 antipode groups
+    groups = [
+        ("ν₄(0,4)  self",                     "self"),
+        ("e₄(4,0)  self",                     "self"),
+        ("u(1,3)  ↔  u'''(7,5)",              "mixed"),
+        ("d(1,5)  ↔  s''(7,3)",               "mixed"),
+        ("s(2,2)  ↔  τ'(6,6)",                "mixed"),
+        ("d'(2,6)  ↔  τ''(6,2)",              "hidden"),
+        ("u'(3,1)  ↔  u''(5,7)",              "mixed"),
+        ("s'(3,7)  ↔  μ'(5,1)",               "mixed"),
+    ]
+    colors = {"self": "#8c564b", "mixed": "#9467bd", "hidden": "#1f77b4"}
+
+    y = 0.72
+    for txt, gtype in groups:
+        ax6.text(0.05, y, txt, fontsize=7.8, family="monospace",
+                 color=colors[gtype])
+        y -= 0.078
+
+    ax6.text(0.5, 0.03,
+             "A(n₁,n₂) = (−n₁ mod 8, −n₂ mod 8)  ·  0 violations",
+             fontsize=8, ha="center", style="italic", color="#333",
+             bbox=dict(boxstyle="round", facecolor="#fdeaf5",
+                       alpha=0.9))
+
+    # =========================================================
+    # ⑧ Live log
+    # =========================================================
+    if show_log:
+        ax7 = fig.add_axes([0.04, 0.02, 0.92, 0.27])
+        ax7.set_xlim(0, 1); ax7.set_ylim(0, 1); ax7.axis("off")
+
+        ax7.text(0.5, 0.97,
+                 f"Live pipeline state at λ = {lam:.4f}   ·   "
+                 f"vacuum fraction = {vac:.8f}",
+                 fontsize=12, ha="center", fontweight="bold",
+                 color="#1f77b4")
+
+        # Column 1 — WIN + DME
+        ax7.text(0.02, 0.84, "① FDLM/WIN  +  ② DME",
+                 fontsize=10, fontweight="bold", color="#d62728")
+        ax7.text(0.02, 0.74,
+                 f"substrate         =  8×8 torus, N = 64",
+                 fontsize=8.5, family="monospace")
+        ax7.text(0.02, 0.66,
+                 f"14 modes at       =  λ = 4",
+                 fontsize=8.5, family="monospace")
+        ax7.text(0.02, 0.58,
+                 f"baseline w        =  −1  exactly",
+                 fontsize=8.5, family="monospace",
+                 color="#d62728", fontweight="bold")
+        ax7.text(0.02, 0.50,
+                 f"γ                 =  {GAMMA:.16f}",
+                 fontsize=8.5, family="monospace",
+                 color="#ff7f0e", fontweight="bold")
+        ax7.text(0.02, 0.42,
+                 f"S(ε)/S₀           =  {S:.12f}",
+                 fontsize=8.5, family="monospace")
+        ax7.text(0.02, 0.34,
+                 f"I(2)              =  {float(I2_mp):.16f}",
+                 fontsize=8.5, family="monospace")
+
+        # Column 2 — Core + EFT
+        ax7.text(0.36, 0.84, "③ Core  +  ④ EFT",
+                 fontsize=10, fontweight="bold", color="#9467bd")
+        ax7.text(0.36, 0.74,
+                 f"ε(λ)              =  {eps:+.12f}",
+                 fontsize=8.5, family="monospace",
+                 color="gold", fontweight="bold")
+        ax7.text(0.36, 0.66,
+                 f"L(ε)              =  {L:.6e}",
+                 fontsize=8.5, family="monospace")
+        ax7.text(0.36, 0.58,
+                 f"dL/dλ             =  {dL:+.6e}",
+                 fontsize=8.5, family="monospace",
+                 color="#9467bd")
+        ax7.text(0.36, 0.50,
+                 f"w(λ)              =  {w_cur:+.12f}",
+                 fontsize=8.5, family="monospace",
+                 color="#1f77b4", fontweight="bold")
+        ax7.text(0.36, 0.42,
+                 f"ζH/ρ(λ)           =  {zeta_cur:+.6e}",
+                 fontsize=8.5, family="monospace")
+        ax7.text(0.36, 0.34,
+                 f"m_s(λ)            =  {ms_cur:.4e}  eV",
+                 fontsize=8.5, family="monospace")
+
+        # Column 3 — ENTROPIX + SYK
+        ax7.text(0.70, 0.84, "⑤ ENTROPIX  +  ⑥ SYK/QIN",
+                 fontsize=10, fontweight="bold", color="#2ca02c")
+        ax7.text(0.70, 0.74,
+                 f"M1 residual       =  {M1:+.4e}",
+                 fontsize=8.5, family="monospace",
+                 color="green" if abs(M1) < 1e-3 or abs(eps) < 1e-8
+                 else "#666")
+        ax7.text(0.70, 0.66,
+                 f"M2 export         =  {M2:.4e}",
+                 fontsize=8.5, family="monospace",
+                 color="green" if M2 >= 0 else "red")
+        ax7.text(0.70, 0.58,
+                 f"SYK coherence     =  {vac:.8f}",
+                 fontsize=8.5, family="monospace",
+                 color="#e377c2", fontweight="bold")
+        ax7.text(0.70, 0.50,
+                 f"antipode pairs    =  8 groups, 0 violations",
+                 fontsize=8.5, family="monospace")
+
+        # Chain
+        ax7.text(0.70, 0.34,
+                 "chain:  WIN(w=−1) → DME(γ) → Core(L[ε])",
+                 fontsize=8.5, family="monospace")
+        ax7.text(0.70, 0.26,
+                 "     → EFT(w,ζ,m_s) → ENTROPIX → SYK",
+                 fontsize=8.5, family="monospace")
+
+        ax7.text(0.5, 0.06,
+                 "The chain is a closed loop: WIN supplies w = −1, "
+                 "DME supplies the deviation. The particle travels the "
+                 "pipeline as λ advances.",
+                 fontsize=9, ha="center", style="italic",
+                 color="#333",
+                 bbox=dict(boxstyle="round", facecolor="#f0f4fa",
+                           alpha=0.9))
+
+    plt.show()
+
+# ------------------------------------------------------------
+# Interactive widget with play button
+# ------------------------------------------------------------
+lam_slider = FloatSlider(
+    min=0.0, max=4.0, step=0.01, value=0.0,
+    description="λ (flow)",
+    continuous_update=True,
+    style={"description_width": "110px"},
+    layout={"width": "600px"},
+)
+eps0_slider = FloatSlider(
+    min=-0.30, max=0.30, step=0.01, value=0.20,
+    description="ε₀ (perturb)",
+    continuous_update=False,
+    style={"description_width": "110px"},
+    layout={"width": "600px"},
+)
+log_toggle = Checkbox(
+    value=True, description="Show live log", indent=False,
+)
+
+# Play button — advances λ in a loop
+play_button = Button(description="▶  Play", button_style="success",
+                     layout={"width": "120px"})
+reset_button = Button(description="↺  Reset", button_style="info",
+                      layout={"width": "120px"})
+
+# ------------------------------------------------------------
+# Render
+# ------------------------------------------------------------
+interact(
+    run_pipeline,
+    lam=lam_slider,
+    eps0=eps0_slider,
+    show_log=log_toggle,
+)
+
+# ------------------------------------------------------------
+# Play animation — advance λ via a simple timer
+# ------------------------------------------------------------
+import time
+from IPython.display import display as _display
+
+_playing = {"state": False}
+
+def _on_play(b):
+    _playing["state"] = not _playing["state"]
+    play_button.description = "⏸  Pause" if _playing["state"] else "▶  Play"
+    play_button.button_style = ("warning" if _playing["state"]
+                                else "success")
+    if _playing["state"]:
+        _advance()
+
+def _advance():
+    if not _playing["state"]:
+        return
+    new_lam = lam_slider.value + 0.05
+    if new_lam > lam_slider.max:
+        new_lam = lam_slider.min
+    lam_slider.value = new_lam
+    if _playing["state"]:
+        import threading
+        threading.Timer(0.10, _advance).start()
+
+def _on_reset(b):
+    _playing["state"] = False
+    play_button.description = "▶  Play"
+    play_button.button_style = "success"
+    lam_slider.value = 0.0
+
+play_button.on_click(_on_play)
+reset_button.on_click(_on_reset)
+
+_display(HBox([play_button, reset_button]))
