@@ -1,0 +1,261 @@
+# ============================================================
+# WIN PARADIGM — Widget #25
+# DME — Strip Integral, Stability Coefficient, Entropy Well
+# ============================================================
+
+import numpy as np
+import matplotlib.pyplot as plt
+import mpmath as mp
+from ipywidgets import interact, FloatSlider
+
+mp.mp.dps = 30
+
+# ------------------------------------------------------------
+# Strip integral — numeric and closed form
+# ------------------------------------------------------------
+def integrand(u, alpha):
+    alpha = mp.mpf(alpha)
+    return (u**(2*alpha - 2)) / mp.sqrt(u**(2*alpha) - 1) - u**(alpha - 2)
+
+def I_numeric(alpha):
+    alpha_mp = mp.mpf(alpha)
+    f = lambda u: (u**(2*alpha_mp - 2)) / mp.sqrt(u**(2*alpha_mp) - 1) - u**(alpha_mp - 2)
+    return mp.quad(f, [1, mp.inf])
+
+def I_closed(alpha):
+    alpha = mp.mpf(alpha)
+    a = mp.mpf(-0.5) + mp.mpf(1) / (2*alpha)
+    return (mp.mpf(1) / (2*alpha)) * (mp.beta(a, mp.mpf(0.5)) - mp.mpf(1) / a)
+
+# ------------------------------------------------------------
+# Reference values at α = 2
+# ------------------------------------------------------------
+I2_mp   = I_closed(2)
+I1_mp   = mp.diff(I_closed, mp.mpf(2), 1)
+I2p_mp  = mp.diff(I_closed, mp.mpf(2), 2)
+
+c1_mp   = -2 * I1_mp
+c2_mp   =  2 * I2p_mp
+gamma_mp = c2_mp / I2_mp
+
+I2_v   = float(I2_mp)
+I1_v   = float(I1_mp)
+I2p_v = float(I2p_mp)
+c1_v   = float(c1_mp)
+c2_v   = float(c2_mp)
+GAMMA = float(gamma_mp)
+
+PUBLISHED_GAMMA = 0.703051
+
+# ------------------------------------------------------------
+# Entropy well
+# ------------------------------------------------------------
+def entropy_well(eps):
+    return 1.0 / (1.0 + GAMMA * np.asarray(eps)**2)
+
+# ------------------------------------------------------------
+# The DME widget
+# ------------------------------------------------------------
+def run_dme(alpha=2.00, eps=0.10):
+    plt.close("all")
+
+    alpha_mp = mp.mpf(alpha)
+
+    # --- Live numeric and closed form at current α ---
+    I_num = I_numeric(alpha)
+    I_cls = I_closed(alpha)
+    diff  = I_num - I_cls
+    rel   = abs(diff / I_cls) if I_cls != 0 else mp.mpf(0)
+
+    # --- Taylor quadratic approximation ---
+    delta = alpha_mp - 2
+    I_taylor = I2_mp + I1_mp * delta + I2p_mp * delta**2 / 2
+    taylor_res = I_cls - I_taylor
+
+    # --- Current entropy well value ---
+    S_val = float(entropy_well(eps))
+    d2S = -2 * GAMMA
+
+    # ---------- Figure ----------
+    fig = plt.figure(figsize=(17, 12), facecolor="white")
+    fig.suptitle(
+        f"DME  ·  Strip integral, stability coefficient, and entropy well   ·   "
+        f"α = {alpha:.4f}  ε = {eps:+.4f}",
+        fontsize=14, fontweight="bold", y=0.985,
+    )
+
+    # =========================================================
+    # Panel ① — I(α) curve with Taylor quadratic overlay
+    # =========================================================
+    ax1 = fig.add_axes([0.05, 0.68, 0.40, 0.245])
+    ax1.set_title("① Strip integral I(α)   —   exact vs quadratic Taylor",
+                  fontsize=11, fontweight="bold", color="#1f77b4")
+
+    alphas_plot = np.linspace(1.5, 3.5, 400)
+    I_exact = np.array([float(I_closed(a)) for a in alphas_plot])
+    I_quad  = I2_v + I1_v*(alphas_plot - 2) + I2p_v*(alphas_plot - 2)**2 / 2
+
+    ax1.plot(alphas_plot, I_exact, "b-", lw=2.5, label="I(α) exact (closed form)")
+    ax1.plot(alphas_plot, I_quad, "r--", lw=2, alpha=0.75, label="Taylor quadratic at α = 2")
+    ax1.axvline(2.0, color="gray", ls=":", alpha=0.5)
+    ax1.axvline(alpha, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax1.scatter([alpha], [float(I_cls)], s=220, c="gold",
+                edgecolors="black", linewidths=2, zorder=5,
+                label=f"current  α = {alpha:.3f}")
+    ax1.set_xlabel("α (strip parameter)", fontsize=9)
+    ax1.set_ylabel("I(α)", fontsize=9)
+    ax1.grid(True, alpha=0.3)
+    ax1.legend(fontsize=8, loc="upper right")
+    ax1.text(0.03, 0.05,
+             f"I(2)  = {I2_v:.12f}\n"
+             f"I′(2) = {I1_v:+.12f}\n"
+             f"I″(2) = {I2p_v:+.12f}",
+             transform=ax1.transAxes, fontsize=8, va="bottom",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#e6f0fa", alpha=0.9))
+
+    # =========================================================
+    # Panel ② — Entropy well S(ε)/S₀ with particle
+    # =========================================================
+    ax2 = fig.add_axes([0.55, 0.68, 0.42, 0.245])
+    ax2.set_title("② DME entropy well   S(ε)/S₀ = 1/(1 + γε²)",
+                  fontsize=11, fontweight="bold", color="#ff7f0e")
+
+    eps_plot = np.linspace(-0.35, 0.35, 400)
+    S_plot   = entropy_well(eps_plot)
+    ax2.plot(eps_plot, S_plot, "orange", lw=2.5, label="S(ε)/S₀  =  1 − γε² + O(ε⁴)")
+    ax2.axvline(0, color="gray", ls="--", alpha=0.5)
+    ax2.axhline(1.0, color="gray", ls=":", alpha=0.4)
+    ax2.axvline(eps, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax2.scatter([eps], [S_val], s=240, c="gold", edgecolors="black",
+                linewidths=2, zorder=5, label=f"ε = {eps:+.4f}")
+    ax2.set_xlabel("ε = D − 4", fontsize=9)
+    ax2.set_ylabel("S(ε)/S₀", fontsize=9)
+    ax2.set_ylim(0.85, 1.01)
+    ax2.grid(True, alpha=0.3)
+    ax2.legend(fontsize=8, loc="lower center")
+    ax2.text(0.03, 0.96,
+             f"γ = {GAMMA:.15f}\n"
+             f"d²S/dε²|₀ = −2γ = {d2S:.12f} < 0",
+             transform=ax2.transAxes, fontsize=8, va="top",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="lightyellow", alpha=0.9))
+
+    # =========================================================
+    # Panel ③ — γ derivation table
+    # =========================================================
+    ax3 = fig.add_axes([0.05, 0.36, 0.42, 0.245])
+    ax3.set_title("③ Stability coefficient   γ = c₂ / I(2)",
+                  fontsize=11, fontweight="bold", color="#9467bd")
+    ax3.axis("off")
+    ax3.set_xlim(0, 1); ax3.set_ylim(0, 1)
+
+    lines = [
+        ("I(2)",        f"{I2_v:.20f}",   "#1f77b4"),
+        ("I′(2)",       f"{I1_v:+.20f}",  "#1f77b4"),
+        ("I″(2)",       f"{I2p_v:+.20f}", "#1f77b4"),
+        ("c₁ = −2 I′(2)", f"{c1_v:+.20f}",  "#d62728"),
+        ("c₂ = +2 I″(2)", f"{c2_v:+.20f}",  "#d62728"),
+        ("γ = c₂ / I(2)", f"{GAMMA:.20f}",  "#9467bd"),
+        ("published γ",   f"{PUBLISHED_GAMMA:.6f}", "#888"),
+        ("exact γ",       f"{GAMMA:.6f}",   "#2ca02c"),
+        ("correction",    f"{(GAMMA - PUBLISHED_GAMMA)/PUBLISHED_GAMMA*100:+.4f} %", "#2ca02c"),
+    ]
+    y = 0.96
+    for label, val, col in lines:
+        ax3.text(0.02, y, label, fontsize=9.5, family="monospace",
+                 fontweight="bold", color=col, va="center")
+        ax3.text(0.34, y, "=", fontsize=9.5, family="monospace", color="gray", va="center")
+        ax3.text(0.40, y, val, fontsize=9, family="monospace", color=col, va="center")
+        y -= 0.105
+
+    # =========================================================
+    # Panel ④ — Taylor residual (log scale)
+    # =========================================================
+    ax4 = fig.add_axes([0.55, 0.36, 0.42, 0.245])
+    ax4.set_title("④ Taylor residual   |I(α) − I_Taylor(α)|",
+                  fontsize=11, fontweight="bold", color="#2ca02c")
+
+    delta_plot = alphas_plot - 2
+    I_taylor_plot = I2_v + I1_v*delta_plot + I2p_v*delta_plot**2 / 2
+    residual = np.abs(I_exact - I_taylor_plot)
+    residual = np.where(residual < 1e-20, 1e-20, residual)
+
+    ax4.semilogy(alphas_plot, residual, "g-", lw=2, label="|I(α) − quadratic Taylor|")
+    ax4.axvline(2.0, color="gray", ls=":", alpha=0.5)
+    ax4.axvline(alpha, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax4.scatter([alpha], [max(abs(float(taylor_res)), 1e-20)],
+                s=200, c="gold", edgecolors="black", linewidths=2, zorder=5,
+                label=f"residual at α = {alpha:.3f}")
+    ax4.set_xlabel("α", fontsize=9)
+    ax4.set_ylabel("|residual|", fontsize=9)
+    ax4.grid(True, alpha=0.3, which="both")
+    ax4.legend(fontsize=8, loc="upper right")
+    ax4.text(0.03, 0.05,
+             f"residual at α = {alpha:.4f}:\n"
+             f"{float(taylor_res):+.3e}",
+             transform=ax4.transAxes, fontsize=8, va="bottom",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#e6fae6", alpha=0.9))
+
+    # =========================================================
+    # Panel ⑤ — Live numeric vs closed form
+    # =========================================================
+    ax5 = fig.add_axes([0.05, 0.02, 0.92, 0.28])
+    ax5.axis("off")
+    ax5.set_xlim(0, 1); ax5.set_ylim(0, 1)
+
+    ax5.text(0.5, 0.97,
+             f"Live verification at α = {alpha:.4f}   "
+             f"(mpmath, {mp.mp.dps} working digits)",
+             fontsize=12, ha="center", fontweight="bold", color="#1f77b4")
+
+    # Left half — numeric integral
+    ax5.text(0.03, 0.82, "NUMERIC INTEGRAL", fontsize=10, fontweight="bold", color="#1f77b4")
+    ax5.text(0.03, 0.71, "∫₁^∞ [u^(2α−2)/√(u^(2α)−1) − u^(α−2)] du", fontsize=8.5, family="monospace")
+    ax5.text(0.03, 0.58, f"= {mp.nstr(I_num, 25)}", fontsize=10, family="monospace", color="#1f77b4", fontweight="bold")
+
+    # Left half — closed form
+    ax5.text(0.03, 0.42, "CLOSED FORM", fontsize=10, fontweight="bold", color="#2ca02c")
+    ax5.text(0.03, 0.31, "(1/2α)[B(a, ½) − 1/a],   a = −½ + 1/(2α)", fontsize=8.5, family="monospace")
+    ax5.text(0.03, 0.18, f"= {mp.nstr(I_cls, 25)}", fontsize=10, family="monospace", color="#2ca02c", fontweight="bold")
+
+    # Right half — difference
+    ax5.text(0.55, 0.82, "DIFFERENCE (numeric − closed)", fontsize=10, fontweight="bold", color="#9467bd")
+    ax5.text(0.55, 0.71, f"Δ   = {mp.nstr(diff, 6)}", fontsize=10, family="monospace")
+    ax5.text(0.55, 0.60, f"|Δ| = {mp.nstr(abs(diff), 6)}", fontsize=10, family="monospace")
+    ax5.text(0.55, 0.49, f"rel = {mp.nstr(rel, 6)}", fontsize=10, family="monospace")
+
+    agree = abs(rel) < mp.mpf("1e-20")
+    ax5.text(0.55, 0.35,
+             "✓  agree to > 20 digits" if agree else "⚠  lower agreement than expected",
+             fontsize=10, fontweight="bold",
+             color="#2ca02c" if agree else "#d62728")
+
+    # Framework constants note
+    ax5.text(0.55, 0.20, "FRAMEWORK CONSTANTS", fontsize=10, fontweight="bold", color="#ff7f0e")
+    ax5.text(0.55, 0.10, "d = 4   N = 64   L = 8   α = D − 2 = 2", fontsize=9, family="monospace")
+    ax5.text(0.55, 0.01,
+             f"baseline w = −1     γ = c₂/I(2) = {GAMMA:.10f}",
+             fontsize=9, family="monospace", color="#ff7f0e", fontweight="bold")
+
+    plt.show()
+
+# ------------------------------------------------------------
+# Interactive widget
+# ------------------------------------------------------------
+interact(
+    run_dme,
+    alpha=FloatSlider(
+        min=1.5, max=3.5, step=0.01, value=2.0,
+        description="α (strip)",
+        continuous_update=False,
+        style={"description_width": "100px"},
+    ),
+    eps=FloatSlider(
+        min=-0.30, max=0.30, step=0.005, value=0.10,
+        description="ε (dimension)",
+        continuous_update=True,
+        style={"description_width": "100px"},
+    ),
+)
