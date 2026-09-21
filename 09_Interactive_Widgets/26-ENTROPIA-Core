@@ -1,0 +1,482 @@
+# ============================================================
+# WIN PARADIGM — Widget #26
+# ENTROPIA-Core — Lyapunov flow, gradient descent, master
+# conditions, and the hidden-bath identification
+# ============================================================
+#
+# Layer 3 of the WIN Paradigm.
+#
+# Physics from ENTROPIA-Core paper:
+#   L[ε]       = γε² + O(ε⁴)              Lyapunov functional
+#   dε/dλ      = −2γε                     gradient flow
+#   dL/dλ      = −4γ²ε² + O(ε⁴) ≤ 0       monotone decrease
+#   ε(λ)       = ε₀ e^(−2γλ)              explicit solution
+#   τ_relax    = 1/(2γ) = 0.711400…       relaxation time in λ
+#
+#   M1: ∂_λ I_eff = 0 at ε = 0
+#   M2: ∂_λ D_export = 4γ²ε² ≥ 0
+#
+#   Hidden bath (EDF):
+#     β = k/γ_f = 2 T_b S₀ γ / γ_f        relaxation rate in ℓ
+#     τ_ℓ = 1/β = γ_f / (2 T_b S₀ γ)      relaxation time in ℓ
+#     T_b/γ_f ∈ [1.4, 7.1] for β ∈ [2,10]
+#     Noise in λ units: γ_f²/S₀
+#     Noise in ℓ units: 2 γ_f T_b
+#
+# ============================================================
+
+import numpy as np
+import math
+import matplotlib.pyplot as plt
+import mpmath as mp
+from ipywidgets import interact, FloatSlider, Checkbox
+
+mp.mp.dps = 40
+
+# ------------------------------------------------------------
+# Framework constants — recompute γ from the strip integral
+# ------------------------------------------------------------
+def I_closed(alpha):
+    alpha = mp.mpf(alpha)
+    a = mp.mpf(-0.5) + mp.mpf(1) / (2 * alpha)
+    return (mp.mpf(1) / (2 * alpha)) * (mp.beta(a, mp.mpf(0.5)) - mp.mpf(1) / a)
+
+I2_mp   = I_closed(2)
+I2p_mp  = mp.diff(I_closed, mp.mpf(2), 2)
+GAMMA   = float((2 * I2p_mp) / I2_mp)
+
+S0 = 1.0                          # normalization
+TAU_LAMBDA = 1.0 / (2.0 * GAMMA)  # ≈ 0.711400
+
+# ------------------------------------------------------------
+# Physics at parameter λ
+# ------------------------------------------------------------
+def epsilon_of_lambda(lam, eps0):
+    return eps0 * np.exp(-2.0 * GAMMA * lam)
+
+def L_leading(eps):
+    return GAMMA * eps**2
+
+def L_full(eps):
+    return GAMMA * eps**2 + eps**4
+
+def dL_dlambda_leading(eps):
+    return -4.0 * GAMMA**2 * eps**2
+
+def dL_dlambda_full(eps):
+    return -4.0 * GAMMA**2 * eps**2 - 8.0 * GAMMA * eps**4
+
+def M1_residual(eps):
+    # ∂_λ I_eff where I_eff ∝ S/S₀ = 1 − γε² + ε⁴
+    # = (−2γε + 4ε³)·(−2γε) = 4γ²ε² − 8γε⁴
+    return 4.0 * GAMMA**2 * eps**2 - 8.0 * GAMMA * eps**4
+
+def M2_export(eps):
+    # ∂_λ D_export = −dL/dλ = 4γ²ε²  (leading order)
+    return 4.0 * GAMMA**2 * eps**2
+
+def D_export(eps, eps0):
+    # D_export(λ) = γε₀² − γε(λ)²
+    return GAMMA * eps0**2 - GAMMA * eps**2
+
+# ------------------------------------------------------------
+# The widget
+# ------------------------------------------------------------
+def run_core(eps0=0.20, lam=0.50, gamma_f=1.0, Tb=2.0,
+             show_full=True, show_multi=True):
+    plt.close("all")
+
+    # ---- Current state ----
+    eps        = epsilon_of_lambda(lam, eps0)
+    L_lead     = L_leading(eps)
+    L_fl       = L_full(eps)
+    dL_lead    = dL_dlambda_leading(eps)
+    dL_fl      = dL_dlambda_full(eps)
+    M1r        = M1_residual(eps)
+    M2v        = M2_export(eps)
+    Dex        = D_export(eps, eps0)
+    vacc_frac  = 1.0 - np.exp(-4.0 * GAMMA * lam)
+
+    # ---- Hidden bath ----
+    beta      = 2.0 * Tb * S0 * GAMMA / gamma_f          # rate in ℓ units
+    tau_ell   = 1.0 / beta if beta > 0 else np.inf       # relaxation time in ℓ
+    ratio_Tg  = Tb / gamma_f
+    ratio_lo  = 2.0 / (2.0 * S0 * GAMMA)                 # β = 2  →  1.42…
+    ratio_hi  = 10.0 / (2.0 * S0 * GAMMA)                # β = 10 →  7.11…
+    in_range  = ratio_lo <= ratio_Tg <= ratio_hi
+    ell       = gamma_f * lam / (2.0 * Tb * S0) if Tb > 0 else np.inf
+    noise_lam = gamma_f**2 / S0                          # amplitude in λ units
+    noise_ell = 2.0 * gamma_f * Tb                       # FD relation in ℓ units
+
+    # ---- Figure ----
+    fig = plt.figure(figsize=(17, 15), facecolor="white")
+    fig.suptitle(
+        f"ENTROPIA-Core  ·  Lyapunov flow of the DME modulus   ·   "
+        f"ε₀ = {eps0:+.4f},   λ = {lam:.3f},   ε(λ) = {eps:+.8f}",
+        fontsize=14, fontweight="bold", y=0.985,
+    )
+
+    # =========================================================
+    # Panel ① — ε(λ) trajectories, particle highlighted
+    # =========================================================
+    ax1 = fig.add_axes([0.04, 0.71, 0.29, 0.24])
+    ax1.set_title("① Gradient flow   ε(λ) = ε₀ e^(−2γλ)",
+                  fontsize=11, fontweight="bold", color="#9467bd")
+
+    lam_grid = np.linspace(0, 4, 400)
+
+    if show_multi:
+        for e0 in np.linspace(-0.30, 0.30, 13):
+            if abs(e0) < 1e-9:
+                continue
+            traj = e0 * np.exp(-2.0 * GAMMA * lam_grid)
+            if abs(e0 - eps0) < 1e-3:
+                continue
+            ax1.plot(lam_grid, traj, lw=1.0, color="gray", alpha=0.35)
+
+    traj_curr = eps0 * np.exp(-2.0 * GAMMA * lam_grid)
+    ax1.plot(lam_grid, traj_curr, lw=3, color="#9467bd",
+             label=f"current  ε₀ = {eps0:+.3f}")
+    ax1.axhline(0, color="gray", ls="--", alpha=0.5)
+
+    # current marker
+    ax1.axvline(lam, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax1.scatter([lam], [eps], s=260, c="gold", edgecolors="black",
+                linewidths=2, zorder=5, label=f"ε(λ) = {eps:+.6f}")
+
+    # relaxation time annotation
+    ax1.axvline(TAU_LAMBDA, color="red", ls=":", lw=1.5, alpha=0.7,
+                label=f"τ_relax = {TAU_LAMBDA:.6f}")
+
+    ax1.set_xlabel("λ (coarse-graining)", fontsize=9)
+    ax1.set_ylabel("ε(λ)", fontsize=9)
+    ax1.grid(True, alpha=0.3)
+    ax1.legend(fontsize=8, loc="upper right")
+
+    # =========================================================
+    # Panel ② — Lyapunov functional
+    # =========================================================
+    ax2 = fig.add_axes([0.355, 0.71, 0.29, 0.24])
+    ax2.set_title("② Lyapunov   L(λ) = γ ε(λ)²",
+                  fontsize=11, fontweight="bold", color="#d62728")
+
+    L_traj_lead = GAMMA * traj_curr**2
+    L_traj_full = GAMMA * traj_curr**2 + traj_curr**4
+
+    ax2.plot(lam_grid, L_traj_lead, "r-", lw=3,
+             label="L = γε²   (leading)")
+    if show_full:
+        ax2.plot(lam_grid, L_traj_full, "r--", lw=2, alpha=0.75,
+                 label="L = γε² + ε⁴   (full)")
+
+    ax2.axvline(lam, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax2.scatter([lam], [L_lead], s=200, c="red",
+                edgecolors="black", linewidths=1.5, zorder=5)
+    if show_full:
+        ax2.scatter([lam], [L_fl], s=200, c="darkred",
+                    edgecolors="black", linewidths=1.5, zorder=5)
+
+    ax2.set_xlabel("λ", fontsize=9)
+    ax2.set_ylabel("L(λ)", fontsize=9)
+    ax2.grid(True, alpha=0.3)
+    ax2.legend(fontsize=8, loc="upper right")
+
+    ax2.text(0.03, 0.96,
+             f"L(λ) = {L_lead:.6e}  (leading)\n"
+             f"L(λ) = {L_fl:.6e}  (full)\n"
+             f"at λ = {lam:.3f}",
+             transform=ax2.transAxes, fontsize=8, va="top",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#ffe6e6", alpha=0.9))
+
+    # =========================================================
+    # Panel ③ — Lyapunov decrease rate (must be ≤ 0)
+    # =========================================================
+    ax3 = fig.add_axes([0.67, 0.71, 0.29, 0.24])
+    ax3.set_title("③ Lyapunov decrease   dL/dλ ≤ 0",
+                  fontsize=11, fontweight="bold", color="#8c564b")
+
+    dL_traj_lead = -4.0 * GAMMA**2 * traj_curr**2
+    dL_traj_full = -4.0 * GAMMA**2 * traj_curr**2 - 8.0 * GAMMA * traj_curr**4
+
+    ax3.plot(lam_grid, dL_traj_lead, "-", color="#8c564b", lw=3,
+             label="−4γ²ε²   (leading)")
+    if show_full:
+        ax3.plot(lam_grid, dL_traj_full, "--", color="#8c564b",
+                 lw=2, alpha=0.75, label="−4γ²ε² − 8γε⁴  (full)")
+
+    ax3.axhline(0, color="black", lw=1, alpha=0.5)
+    ax3.axvline(lam, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax3.scatter([lam], [dL_lead], s=200, c="#8c564b",
+                edgecolors="black", linewidths=1.5, zorder=5)
+    if show_full:
+        ax3.scatter([lam], [dL_fl], s=200, c="#5a3a28",
+                    edgecolors="black", linewidths=1.5, zorder=5)
+
+    ax3.set_xlabel("λ", fontsize=9)
+    ax3.set_ylabel("dL/dλ", fontsize=9)
+    ax3.grid(True, alpha=0.3)
+    ax3.legend(fontsize=8, loc="lower right")
+
+    ax3.text(0.03, 0.05,
+             f"dL/dλ = {dL_lead:+.4e}  (leading)\n"
+             f"dL/dλ = {dL_fl:+.4e}  (full)\n"
+             f"≤ 0  ✓" if dL_lead <= 0 else "> 0  ✗",
+             transform=ax3.transAxes, fontsize=8, va="bottom",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#f5ebe4", alpha=0.9))
+
+    # =========================================================
+    # Panel ④ — Master conditions M1, M2 (wide)
+    # =========================================================
+    ax4 = fig.add_axes([0.04, 0.39, 0.44, 0.24])
+    ax4.set_title("④ Master conditions   M1: ∂_λ I_eff → 0      M2: ∂_λ D_export ≥ 0",
+                  fontsize=11, fontweight="bold", color="#2ca02c")
+
+    M1_traj = 4.0 * GAMMA**2 * traj_curr**2 - 8.0 * GAMMA * traj_curr**4
+    M2_traj = 4.0 * GAMMA**2 * traj_curr**2
+
+    ax4.plot(lam_grid, M1_traj, "-", color="#d62728", lw=2.5,
+             label="M1 residual   ∂_λ I_eff")
+    ax4.plot(lam_grid, M2_traj, "-", color="#2ca02c", lw=2.5,
+             label="M2 export     ∂_λ D_export")
+    ax4.axhline(0, color="black", ls="--", alpha=0.4)
+    ax4.axvline(lam, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax4.scatter([lam], [M1r], s=200, c="#d62728",
+                edgecolors="black", linewidths=1.5, zorder=5)
+    ax4.scatter([lam], [M2v], s=200, c="#2ca02c",
+                edgecolors="black", linewidths=1.5, zorder=5)
+
+    ax4.set_xlabel("λ", fontsize=9)
+    ax4.set_ylabel("residual / rate", fontsize=9)
+    ax4.grid(True, alpha=0.3)
+    ax4.legend(fontsize=8, loc="upper right")
+
+    m1_ok = M1r >= -1e-12 or abs(eps) < 1e-8
+    m2_ok = M2v >= 0
+    ax4.text(0.03, 0.05,
+             f"M1 residual = {M1r:+.4e}   {'✓' if m1_ok else '✗'}\n"
+             f"M2 export   = {M2v:.4e}    {'✓' if m2_ok else '✗'}\n"
+             f"D_export(λ) = γε₀² − γε² = {Dex:.6e}",
+             transform=ax4.transAxes, fontsize=8, va="bottom",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#e6fae6", alpha=0.9))
+
+    # =========================================================
+    # Panel ⑤ — Hidden bath constraint (wide)
+    # =========================================================
+    ax5 = fig.add_axes([0.51, 0.39, 0.46, 0.24])
+    ax5.set_title("⑤ Hidden bath   EDF identification   T_b / γ_f",
+                  fontsize=11, fontweight="bold", color="#1f77b4")
+    ax5.axis("off")
+    ax5.set_xlim(0, 1); ax5.set_ylim(0, 1)
+
+    # Left — values table
+    ax5.text(0.02, 0.94, "BATH PARAMETERS", fontsize=9.5,
+             fontweight="bold", color="#1f77b4")
+    rows_left = [
+        ("γ_f  (friction)",  f"{gamma_f:.4f}"),
+        ("T_b  (temp)",      f"{Tb:.4f}"),
+        ("T_b / γ_f",        f"{ratio_Tg:.4f}"),
+        ("β = 2 T_b γ / γ_f", f"{beta:.4f}"),
+        ("τ_ℓ = 1/β",        f"{tau_ell:.4f}"),
+        ("ℓ at current λ",   f"{ell:.4f}"),
+    ]
+    y = 0.82
+    for lab, val in rows_left:
+        ax5.text(0.02, y, lab, fontsize=8.5, family="monospace")
+        ax5.text(0.32, y, "=", fontsize=8.5, family="monospace", color="gray")
+        ax5.text(0.36, y, val, fontsize=8.5, family="monospace",
+                 fontweight="bold", color="#1f77b4")
+        y -= 0.10
+
+    # Right — reference range bar
+    ax5.text(0.55, 0.94, "REFERENCE RANGE   (β ∈ [2, 10])",
+             fontsize=9.5, fontweight="bold", color="#1f77b4")
+    ax5.text(0.55, 0.84,
+             f"T_b/γ_f ∈ [{ratio_lo:.3f}, {ratio_hi:.3f}]",
+             fontsize=9, family="monospace")
+
+    bar_x, bar_y = 0.55, 0.55
+    bar_w, bar_h = 0.40, 0.10
+    ax5.add_patch(plt.Rectangle((bar_x, bar_y), bar_w, bar_h,
+                                facecolor="#e6f0fa", edgecolor="#1f77b4",
+                                linewidth=1.2))
+
+    # current position marker (clipped)
+    rel = (ratio_Tg - ratio_lo) / (ratio_hi - ratio_lo)
+    rel_c = np.clip(rel, 0.02, 0.98)
+    marker_x = bar_x + rel_c * bar_w
+    col = "#2ca02c" if in_range else "#d62728"
+    ax5.add_patch(plt.Rectangle((marker_x - 0.006, bar_y - 0.015), 0.012,
+                                bar_h + 0.030, facecolor=col,
+                                edgecolor=col, alpha=0.9))
+    ax5.text(marker_x, bar_y + bar_h + 0.05,
+             f"{ratio_Tg:.3f}", fontsize=9, ha="center",
+             fontweight="bold", color=col)
+    ax5.text(bar_x - 0.01, bar_y + bar_h/2,
+             f"{ratio_lo:.2f}", fontsize=8, ha="right", va="center",
+             color="#666", family="monospace")
+    ax5.text(bar_x + bar_w + 0.01, bar_y + bar_h/2,
+             f"{ratio_hi:.2f}", fontsize=8, ha="left", va="center",
+             color="#666", family="monospace")
+
+    status = "✓ in range" if in_range else "⚠ outside"
+    ax5.text(0.55, 0.40,
+             f"status: {status}",
+             fontsize=9, fontweight="bold", color=col)
+
+    # Noise
+    ax5.text(0.55, 0.28, "NOISE AMPLITUDES",
+             fontsize=9.5, fontweight="bold", color="#1f77b4")
+    ax5.text(0.55, 0.18,
+             f"⟨ξ(λ)ξ(λ')⟩ = γ_f²/S₀ · δ = {noise_lam:.4f}",
+             fontsize=8.5, family="monospace")
+    ax5.text(0.55, 0.08,
+             f"⟨ξ(ℓ)ξ(ℓ')⟩ = 2 γ_f T_b · δ = {noise_ell:.4f}",
+             fontsize=8.5, family="monospace")
+
+    # =========================================================
+    # Panel ⑥ — Live log
+    # =========================================================
+    ax6 = fig.add_axes([0.04, 0.02, 0.93, 0.32])
+    ax6.axis("off")
+    ax6.set_xlim(0, 1); ax6.set_ylim(0, 1)
+
+    ax6.text(0.5, 0.98,
+             f"Live physics at λ = {lam:.4f}   ·   ε(λ) = {eps:+.10f}   ·   "
+             f"vacuum fraction = {vacc_frac:.6f}",
+             fontsize=12, ha="center", fontweight="bold", color="#9467bd")
+
+    # Column 1 — inputs & DME
+    ax6.text(0.02, 0.84, "DME input", fontsize=10,
+             fontweight="bold", color="#ff7f0e")
+    ax6.text(0.02, 0.75,
+             f"γ            = {GAMMA:.15f}",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.02, 0.67,
+             f"τ_relax (λ)  = 1/(2γ) = {TAU_LAMBDA:.6f}",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.02, 0.59,
+             f"ε₀ (initial) = {eps0:+.6f}",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.02, 0.51,
+             f"ε(λ) current = {eps:+.10f}",
+             fontsize=8.5, family="monospace", color="gold",
+             fontweight="bold")
+
+    ax6.text(0.02, 0.39, "Lyapunov", fontsize=10,
+             fontweight="bold", color="#d62728")
+    ax6.text(0.02, 0.30,
+             f"L(ε)  = γε²      = {L_lead:.6e}",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.02, 0.22,
+             f"L(ε)  = γε² + ε⁴ = {L_fl:.6e}",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.02, 0.14,
+             f"dL/dλ = {dL_lead:+.6e}  (leading)",
+             fontsize=8.5, family="monospace", color="#d62728")
+    ax6.text(0.02, 0.06,
+             f"dL/dλ = {dL_fl:+.6e}  (full)",
+             fontsize=8.5, family="monospace", color="#8c564b")
+
+    # Column 2 — master conditions
+    ax6.text(0.36, 0.84, "Master conditions", fontsize=10,
+             fontweight="bold", color="#2ca02c")
+    ax6.text(0.36, 0.75,
+             f"M1: ∂_λ I_eff  = {M1r:+.4e}",
+             fontsize=8.5, family="monospace",
+             color="green" if m1_ok else "red")
+    ax6.text(0.36, 0.67,
+             f"M2: ∂_λ D_exp  = {M2v:.4e}",
+             fontsize=8.5, family="monospace",
+             color="green" if m2_ok else "red")
+    ax6.text(0.36, 0.59,
+             f"D_export(λ)  = γε₀² − γε²",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.36, 0.51,
+             f"             = {Dex:.6e}",
+             fontsize=8.5, family="monospace", color="#2ca02c",
+             fontweight="bold")
+
+    ax6.text(0.36, 0.39, "Flow identity", fontsize=10,
+             fontweight="bold", color="#9467bd")
+    ax6.text(0.36, 0.30,
+             "dε/dλ = −2γε",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.36, 0.22,
+             f"      = {-2.0 * GAMMA * eps:+.6e}",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.36, 0.14,
+             "ε(λ) = ε₀ e^(−2γλ)",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.36, 0.06,
+             f"     = {eps:+.10f}",
+             fontsize=8.5, family="monospace", color="gold",
+             fontweight="bold")
+
+    # Column 3 — hidden bath
+    ax6.text(0.70, 0.84, "Hidden bath (EDF)", fontsize=10,
+             fontweight="bold", color="#1f77b4")
+    ax6.text(0.70, 0.75,
+             f"γ_f     = {gamma_f:.4f}",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.70, 0.67,
+             f"T_b     = {Tb:.4f}",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.70, 0.59,
+             f"T_b/γ_f = {ratio_Tg:.4f}   "
+             f"[{ratio_lo:.2f}, {ratio_hi:.2f}] "
+             f"{'✓' if in_range else '⚠'}",
+             fontsize=8.5, family="monospace",
+             color="green" if in_range else "#d62728")
+    ax6.text(0.70, 0.51,
+             f"β       = {beta:.4f}  (rate in ℓ)",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.70, 0.43,
+             f"τ_ℓ     = {tau_ell:.4f}  (relax time ℓ)",
+             fontsize=8.5, family="monospace")
+
+    ax6.text(0.70, 0.31, "Chain", fontsize=10,
+             fontweight="bold", color="#8c564b")
+    ax6.text(0.70, 0.22,
+             "WIN(w=−1) → DME(γ) → Core(L[ε])",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.70, 0.14,
+             "  → EFT(w,ζ,m_s) → ENTROPIX → SYK",
+             fontsize=8.5, family="monospace")
+    ax6.text(0.70, 0.04,
+             "Core: stable attractor at ε = 0",
+             fontsize=8.5, family="monospace", style="italic",
+             color="#8c564b")
+
+    plt.show()
+
+# ------------------------------------------------------------
+# Interactive widget
+# ------------------------------------------------------------
+interact(
+    run_core,
+    eps0=FloatSlider(min=-0.30, max=0.30, step=0.01, value=0.20,
+                     description="ε₀ (perturb)",
+                     continuous_update=False,
+                     style={"description_width": "110px"}),
+    lam=FloatSlider(min=0.0, max=4.0, step=0.01, value=0.50,
+                    description="λ (flow)",
+                    continuous_update=True,
+                    style={"description_width": "110px"}),
+    gamma_f=FloatSlider(min=0.20, max=3.00, step=0.05, value=1.00,
+                        description="γ_f (friction)",
+                        continuous_update=False,
+                        style={"description_width": "110px"}),
+    Tb=FloatSlider(min=0.20, max=5.00, step=0.05, value=2.00,
+                   description="T_b (bath temp)",
+                   continuous_update=False,
+                   style={"description_width": "110px"}),
+    show_full=Checkbox(value=True,
+                       description="Include ε⁴ corrections",
+                       indent=False),
+    show_multi=Checkbox(value=True,
+                        description="Show family of trajectories",
+                        indent=False),
+)
