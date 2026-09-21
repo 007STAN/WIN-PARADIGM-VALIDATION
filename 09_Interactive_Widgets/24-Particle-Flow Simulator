@@ -1,0 +1,501 @@
+# ============================================================
+# WIN PARADIGM — Widget #24
+# Particle-Flow Simulator — v2
+# All six layers follow the particle in real time.
+# ============================================================
+
+import numpy as np
+import matplotlib.pyplot as plt
+import mpmath as mp
+from ipywidgets import interact, IntSlider, FloatSlider
+
+mp.mp.dps = 30
+
+# ------------------------------------------------------------
+# Framework constants
+# ------------------------------------------------------------
+d, N, L = 4, 64, 8
+M_P_eV = 1.220890e28
+
+# ------------------------------------------------------------
+# Strip integral — mpmath at 30-digit precision
+# ------------------------------------------------------------
+def I_of_alpha(alpha):
+    alpha = mp.mpf(alpha)
+    a = mp.mpf(-0.5) + mp.mpf(1) / (2 * alpha)
+    return (mp.mpf(1) / (2 * alpha)) * (mp.beta(a, mp.mpf(0.5)) - mp.mpf(1) / a)
+
+I2_mp    = I_of_alpha(2)
+I1_mp    = mp.diff(I_of_alpha, mp.mpf(2), 1)
+I2p_mp   = mp.diff(I_of_alpha, mp.mpf(2), 2)
+c1_mp    = -2 * I1_mp
+c2_mp    =  2 * I2p_mp
+gamma_mp = c2_mp / I2_mp
+
+I2_v  = float(I2_mp)
+I1_v  = float(I1_mp)
+I2p_v = float(I2p_mp)
+c1_v  = float(c1_mp)
+c2_v  = float(c2_mp)
+GAMMA = float(gamma_mp)
+
+# Fixed vacuum targets (only reached as λ → ∞)
+W_VAC    = -1.0 - (1.0 - GAMMA)**2 / (2.0 * np.pi)
+ZETA_VAC = (1.0 - GAMMA)**2 / (6.0 * np.pi)
+MS_VAC   = (M_P_eV / N) * np.exp(-5.0 * N / 3.0)
+H_BOOST  = 1.0 + (GAMMA - 0.5) / (2.0 * np.pi)
+
+# ------------------------------------------------------------
+# The 14 torus modes
+# ------------------------------------------------------------
+MODES = [
+    ("ν",  0, 4, 64, 60.0),
+    ("e",  4, 0, 64, 24.0),
+    ("u",  1, 3, 48, 21.0),
+    ("d",  1, 5, 48, 20.0),
+    ("s",  3, 1, 48, 14.0),
+    ("μ",  3, 7, 48, 14.0),
+    ("d'", 5, 7, 48, 12.0),
+    ("c",  7, 3, 48,  9.5),
+    ("τ",  7, 5, 48,  9.0),
+    ("b",  5, 1, 48,  7.5),
+    ("W",  2, 2, 32,  2.0),
+    ("Z",  2, 6, 32,  2.0),
+    ("H",  6, 2, 32,  1.0),
+    ("t",  6, 6, 32,  0.5),
+]
+SUPPORT_COLORS = {64: "#d62728", 48: "#1f77b4", 32: "#2ca02c"}
+
+def antipode(n1, n2, L=8):
+    return ((-n1) % L, (-n2) % L)
+
+# ------------------------------------------------------------
+# Physics functions
+# ------------------------------------------------------------
+def epsilon_of_lambda(lam, eps0):
+    return eps0 * np.exp(-2.0 * GAMMA * lam)
+
+def entropy_well(eps):
+    return 1.0 - GAMMA * eps**2 + eps**4
+
+def lyapunov(eps):
+    return GAMMA * eps**2 + eps**4
+
+def dL_dlambda(eps):
+    return -4.0 * GAMMA**2 * eps**2
+
+def M1_residual(eps):
+    return 4.0 * GAMMA**2 * eps**2 - 8.0 * GAMMA * eps**4
+
+def M2_export_rate(eps):
+    return 4.0 * GAMMA**2 * eps**2
+
+def vacuum_fraction(lam):
+    # = 1 − (ε(λ)/ε₀)² = 1 − exp(−4γλ)
+    return float(np.clip(1.0 - np.exp(-4.0 * GAMMA * lam), 0.0, 1.0))
+
+# ------------------------------------------------------------
+# Phase label
+# ------------------------------------------------------------
+def phase_label(lam):
+    if lam < 0.10:
+        return "①  just perturbed"
+    elif lam < 1.00:
+        return "②  relaxing"
+    elif lam < 2.00:
+        return "③  near equilibrium"
+    else:
+        return "④  at equilibrium"
+
+# ------------------------------------------------------------
+# The simulation
+# ------------------------------------------------------------
+def run_simulation(mode_index=0, eps0=0.20, lam=0.0):
+    plt.close("all")
+
+    # ---- Live state ----
+    eps   = epsilon_of_lambda(lam, eps0)
+    S_val = entropy_well(eps)
+    L_val = lyapunov(eps)
+    dLdl  = dL_dlambda(eps)
+    M1r   = M1_residual(eps)
+    M2v   = M2_export_rate(eps)
+    m1_ok = abs(M1r) < 1e-4 or abs(eps) < 1e-8
+    m2_ok = M2v >= 0
+
+    vac_f = vacuum_fraction(lam)
+
+    # ---- Live EFT values (interpolate from bare WIN baseline to vacuum) ----
+    w_eff    = -1.0 - (1.0 - GAMMA)**2 / (2.0*np.pi) * vac_f
+    zeta_eff = (1.0 - GAMMA)**2 / (6.0*np.pi) * vac_f
+    ms_eff   = MS_VAC * vac_f
+
+    # ---- Mode identity ----
+    label, n1, n2, support, n4 = MODES[mode_index]
+    ap1, ap2 = antipode(n1, n2, L=8)
+
+    # ---- Phase ----
+    phase = phase_label(lam)
+
+    # =========================================================
+    fig = plt.figure(figsize=(17.5, 13.5), facecolor="white")
+    fig.suptitle(
+        f"WIN Particle-Flow  ·  mode = {label}({n1},{n2})  ·  "
+        f"λ = {lam:.3f}   ε(λ) = {eps:+.8f}   ·   {phase}",
+        fontsize=14, fontweight="bold", y=0.985,
+    )
+
+    # ---------------------------------------------------------
+    # ① Torus  —  substrate
+    # ---------------------------------------------------------
+    ax1 = fig.add_axes([0.035, 0.68, 0.285, 0.245])
+    ax1.set_title("① FDLM/WIN — 8×8 torus substrate",
+                  fontsize=11, fontweight="bold", color="#d62728")
+    ax1.set_xlim(-0.7, 7.7); ax1.set_ylim(-0.7, 7.7)
+    ax1.set_aspect("equal")
+    ax1.set_xticks(range(8)); ax1.set_yticks(range(8))
+    ax1.grid(True, alpha=0.25)
+
+    for i in range(8):
+        for j in range(8):
+            ax1.plot(i, j, ".", color="lightgray", markersize=3)
+
+    for idx, (lab, a, b, sup, _) in enumerate(MODES):
+        col = SUPPORT_COLORS[sup]
+        sel = (idx == mode_index)
+        ax1.scatter(a, b, s=310 if sel else 100, c=col,
+                    alpha=1.0 if sel else 0.55,
+                    edgecolors="gold" if sel else "black",
+                    linewidths=2.5 if sel else 1.0, zorder=3)
+        ax1.text(a, b, lab, fontsize=8, ha="center", va="center",
+                 color="white", fontweight="bold", zorder=4)
+
+    ax1.scatter([ap1], [ap2], s=310, facecolors="none",
+                edgecolors="magenta", linewidths=2.5,
+                linestyle="--", zorder=5)
+    if (ap1, ap2) != (n1, n2):
+        ax1.annotate("", xy=(ap1, ap2), xytext=(n1, n2),
+                     arrowprops=dict(arrowstyle="->", color="magenta",
+                                     lw=1.8, alpha=0.75), zorder=2)
+    ax1.text(0.5, -0.55,
+             f"baseline w = −1 exactly  ·  antipode ({ap1},{ap2})",
+             transform=ax1.transData, fontsize=8, ha="center", color="#333")
+
+    # ---------------------------------------------------------
+    # ② DME entropy well  —  particle climbs to the peak
+    # ---------------------------------------------------------
+    ax2 = fig.add_axes([0.36, 0.68, 0.285, 0.245])
+    ax2.set_title("② DME — entropy well S(ε)/S₀",
+                  fontsize=11, fontweight="bold", color="#ff7f0e")
+
+    e_grid = np.linspace(-0.35, 0.35, 400)
+    S_grid = entropy_well(e_grid)
+    ax2.plot(e_grid, S_grid, "b-", lw=2, label="S(ε)/S₀ = 1 − γε² + ε⁴")
+    ax2.axvline(0, color="gray", ls="--", alpha=0.5)
+    ax2.axhline(1.0, color="gray", ls="--", alpha=0.3)
+    ax2.axvline(eps, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax2.scatter([eps], [S_val], s=240, c="gold", edgecolors="black",
+                linewidths=2, zorder=5,
+                label=f"particle  ε = {eps:+.6f}")
+    ax2.set_xlabel("ε = D − 4", fontsize=9)
+    ax2.set_ylabel("S(ε)/S₀", fontsize=9)
+    ax2.set_ylim(0.85, 1.01)
+    ax2.grid(True, alpha=0.3)
+    ax2.legend(fontsize=8, loc="lower center")
+    ax2.text(0.03, 0.96,
+             f"γ = {GAMMA:.10f}\nI(2) = {I2_v:.10f}\nc₂ = {c2_v:.10f}",
+             transform=ax2.transAxes, fontsize=8, va="top", family="monospace",
+             bbox=dict(boxstyle="round", facecolor="lightyellow", alpha=0.9))
+
+    # ---------------------------------------------------------
+    # ③ ENTROPIA-Core  —  particle slides down the flow
+    # ---------------------------------------------------------
+    ax3 = fig.add_axes([0.685, 0.68, 0.28, 0.245])
+    ax3.set_title("③ ENTROPIA-Core — gradient flow",
+                  fontsize=11, fontweight="bold", color="#9467bd")
+
+    lam_grid = np.linspace(0, 4, 400)
+    eps_traj = epsilon_of_lambda(lam_grid, eps0)
+    ax3.plot(lam_grid, eps_traj, "purple", lw=2,
+             label="ε(λ) = ε₀ e^(−2γλ)")
+    ax3.fill_between(lam_grid, 0, eps_traj, color="purple", alpha=0.08)
+    ax3.axhline(0, color="gray", ls="--", alpha=0.5)
+    ax3.axvline(lam, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax3.scatter([lam], [eps], s=240, c="gold",
+                edgecolors="black", linewidths=2, zorder=5)
+    ax3.set_xlabel("λ (coarse-graining parameter)", fontsize=9)
+    ax3.set_ylabel("ε(λ)", fontsize=9)
+    ax3.grid(True, alpha=0.3)
+    ax3.legend(fontsize=8, loc="upper right")
+    ax3.text(0.03, 0.05,
+             f"dε/dλ = −2γε\nτ_relax = 1/(2γ) = {1/(2*GAMMA):.6f}\n"
+             f"dL/dλ = {dLdl:+.3e}",
+             transform=ax3.transAxes, fontsize=8, va="bottom", family="monospace",
+             bbox=dict(boxstyle="round", facecolor="lavender", alpha=0.9))
+
+    # ---------------------------------------------------------
+    # ④ ENTROPIA-EFT  —  live vacuum approach
+    # ---------------------------------------------------------
+    ax4 = fig.add_axes([0.035, 0.375, 0.285, 0.245])
+    ax4.set_title("④ ENTROPIA-EFT — vacuum approach",
+                  fontsize=11, fontweight="bold", color="#1f77b4")
+    ax4.set_xlim(0, 1); ax4.set_ylim(0, 1)
+    ax4.axis("off")
+
+    ax4.text(0.5, 0.96,
+             f"vacuum fraction   f(λ) = 1 − e^(−4γλ) = {vac_f:.6f}",
+             fontsize=9, ha="center", family="monospace", color="#1f77b4")
+
+    # Three progress bars
+    bars = [
+        ("w",      w_eff,      W_VAC,    "#1f77b4",
+         lambda v: f"{v:+.10f}"),
+        ("ζH/ρ",   zeta_eff,   ZETA_VAC, "#ff7f0e",
+         lambda v: f"{v:+.10e}"),
+        ("m_s",    ms_eff,     MS_VAC,   "#2ca02c",
+         lambda v: f"{v:.6e}"),
+    ]
+    y0 = 0.78
+    bar_h = 0.09
+    bar_w = 0.62
+    x0 = 0.30
+    for sym, val, target, col, fmt in bars:
+        # label
+        ax4.text(0.02, y0 + bar_h/2, sym, fontsize=11,
+                 family="monospace", fontweight="bold", color=col,
+                 va="center")
+        # track
+        ax4.add_patch(plt.Rectangle((x0, y0), bar_w, bar_h,
+                                    facecolor="#eeeeee",
+                                    edgecolor="#bbbbbb", linewidth=0.8))
+        # fill  (progress = vac_f)
+        ax4.add_patch(plt.Rectangle((x0, y0), bar_w * vac_f, bar_h,
+                                    facecolor=col, edgecolor=col,
+                                    alpha=0.85))
+        # live value
+        ax4.text(x0 + bar_w + 0.02, y0 + bar_h/2,
+                 fmt(val), fontsize=8.5, family="monospace",
+                 va="center", color="black")
+        # target (small, below)
+        ax4.text(x0, y0 - 0.012,
+                 f"target {fmt(target)}", fontsize=7,
+                 family="monospace", color="#888", va="top")
+        y0 -= 0.18
+
+    ax4.text(0.5, 0.03,
+             "w = −1 − (1−γ)²/(2π) · f(λ)\n"
+             "WIN baseline: −1 →  corrected: −1.014…",
+             fontsize=8.5, ha="center", style="italic", color="#333",
+             bbox=dict(boxstyle="round", facecolor="#e6f0fa", alpha=0.9))
+
+    # ---------------------------------------------------------
+    # ⑤ ENTROPIX/MESA  —  master conditions along the flow
+    # ---------------------------------------------------------
+    ax5 = fig.add_axes([0.36, 0.375, 0.285, 0.245])
+    ax5.set_title("⑤ ENTROPIX/MESA — M1, M2 during flow",
+                  fontsize=11, fontweight="bold", color="#2ca02c")
+
+    # Normalized curves so both are visible on one axis
+    M1_grid = np.array([M1_residual(e) for e in eps_traj])
+    M2_grid = np.array([M2_export_rate(e) for e in eps_traj])
+    M1_norm = M1_grid / max(abs(M1_grid).max(), 1e-30)
+    M2_norm = M2_grid / max(abs(M2_grid).max(), 1e-30)
+
+    ax5.plot(lam_grid, M1_norm, color="#d62728", lw=2,
+             label="M1 residual  (∂I_eff/∂λ)")
+    ax5.plot(lam_grid, M2_norm, color="#2ca02c", lw=2,
+             label="M2 export  (∂D_export/∂λ)")
+    ax5.axhline(0, color="gray", ls="--", alpha=0.4)
+    ax5.axvline(lam, color="gold", ls="-", lw=2.5, alpha=0.9, zorder=4)
+    ax5.scatter([lam], [np.interp(lam, lam_grid, M1_norm)],
+                s=140, c="#d62728", edgecolors="black",
+                linewidths=1.5, zorder=5)
+    ax5.scatter([lam], [np.interp(lam, lam_grid, M2_norm)],
+                s=140, c="#2ca02c", edgecolors="black",
+                linewidths=1.5, zorder=5)
+    ax5.set_xlabel("λ", fontsize=9)
+    ax5.set_ylabel("normalized residual", fontsize=9)
+    ax5.set_ylim(-0.05, 1.10)
+    ax5.grid(True, alpha=0.3)
+    ax5.legend(fontsize=8, loc="upper right")
+
+    ax5.text(0.03, 0.06,
+             f"M1 residual = {M1r:+.3e}   {'✓' if m1_ok else '✗'}\n"
+             f"M2 export   = {M2v:.3e}   {'✓' if m2_ok else '✗'}",
+             transform=ax5.transAxes, fontsize=8.5, va="bottom",
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#e6fae6", alpha=0.9))
+
+    # ---------------------------------------------------------
+    # ⑥ SYK/QIN  —  antipode coherence
+    # ---------------------------------------------------------
+    ax6 = fig.add_axes([0.685, 0.375, 0.28, 0.245])
+    ax6.set_title("⑥ SYK/QIN — antipode coherence",
+                  fontsize=11, fontweight="bold", color="#e377c2")
+    ax6.set_xlim(0, 1); ax6.set_ylim(0, 1)
+    ax6.axis("off")
+
+    # Coherence bar at top
+    ax6.text(0.5, 0.97,
+             f"coherence  =  f(λ)  =  {vac_f:.6f}",
+             fontsize=9, ha="center", family="monospace", color="#e377c2")
+
+    bar_x, bar_y = 0.05, 0.86
+    bar_w, bar_h = 0.90, 0.05
+    ax6.add_patch(plt.Rectangle((bar_x, bar_y), bar_w, bar_h,
+                                facecolor="#f0f0f0",
+                                edgecolor="#ccc", linewidth=0.8))
+    ax6.add_patch(plt.Rectangle((bar_x, bar_y), bar_w * vac_f, bar_h,
+                                facecolor="#e377c2",
+                                edgecolor="#e377c2", alpha=0.9))
+
+    # 8 antipode groups
+    groups = {}
+    for lab, a, b, sup, _ in MODES:
+        aa, bb = antipode(a, b, L=8)
+        key = tuple(sorted([(a, b), (aa, bb)]))
+        groups.setdefault(key, []).append((lab, a, b))
+
+    my_key = tuple(sorted([(n1, n2), (ap1, ap2)]))
+
+    y = 0.76
+    for key, members in sorted(groups.items()):
+        mine = (key == my_key)
+        txt = " ".join(f"{l}({a},{b})" for l, a, b in members)
+        ax6.text(0.05, y,
+                 ("★ " if mine else "  ") + txt,
+                 fontsize=8.5, family="monospace",
+                 color="magenta" if mine else "#333",
+                 fontweight="bold" if mine else "normal")
+        if mine:
+            ax6.add_patch(plt.Rectangle((0.02, y - 0.012), 0.96, 0.045,
+                                        facecolor="magenta", alpha=0.10,
+                                        edgecolor="magenta", linewidth=0.7))
+        y -= 0.085
+
+    ax6.text(0.5, 0.02,
+             "A(n₁,n₂) = (−n₁ mod 8, −n₂ mod 8)   ·   zero violations",
+             fontsize=8, ha="center", style="italic", color="#333")
+
+    # ---------------------------------------------------------
+    # ⑦ Live calculation trace
+    # ---------------------------------------------------------
+    ax7 = fig.add_axes([0.035, 0.02, 0.93, 0.31])
+    ax7.set_xlim(0, 1); ax7.set_ylim(0, 1)
+    ax7.axis("off")
+
+    ax7.text(0.5, 0.985,
+             f"Live physics at λ = {lam:.4f}   ·   "
+             f"vacuum fraction f(λ) = {vac_f:.6f}   ·   {phase}",
+             fontsize=11.5, ha="center", fontweight="bold", color="#1f77b4")
+
+    # Column 1
+    ax7.text(0.02, 0.86, "① FDLM/WIN", fontsize=10,
+             fontweight="bold", color="#d62728")
+    ax7.text(0.02, 0.76,
+             f"mode          =  {label}  at  (n₁,n₂) = ({n1},{n2})",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.68,
+             f"support       =  {support}     N/4 = {n4}",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.60,
+             f"baseline      =  w = −1  exactly",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.52,
+             f"antipode      =  ({ap1},{ap2})",
+             fontsize=8.5, family="monospace", color="magenta")
+
+    ax7.text(0.02, 0.40, "② DME", fontsize=10,
+             fontweight="bold", color="#ff7f0e")
+    ax7.text(0.02, 0.30,
+             f"I(2)   = {I2_v:.16f}", fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.22,
+             f"I″(2)  = {I2p_v:+.16f}", fontsize=8.5, family="monospace")
+    ax7.text(0.02, 0.14,
+             f"γ      = {GAMMA:.16f}", fontsize=8.5,
+             family="monospace", color="#ff7f0e", fontweight="bold")
+    ax7.text(0.02, 0.04,
+             f"S(ε)/S₀ = {S_val:.10f}   (peak = 1.0)",
+             fontsize=8.5, family="monospace")
+
+    # Column 2
+    ax7.text(0.34, 0.86, "③ ENTROPIA-Core", fontsize=10,
+             fontweight="bold", color="#9467bd")
+    ax7.text(0.34, 0.76,
+             f"ε(λ)    = {eps:+.12f}", fontsize=8.5,
+             family="monospace", color="gold", fontweight="bold")
+    ax7.text(0.34, 0.68,
+             f"L(ε)    = {L_val:.6e}", fontsize=8.5, family="monospace")
+    ax7.text(0.34, 0.60,
+             f"dL/dλ   = {dLdl:+.6e}", fontsize=8.5,
+             family="monospace", color="#9467bd")
+    ax7.text(0.34, 0.52,
+             f"τ_relax = {1/(2*GAMMA):.6f}", fontsize=8.5, family="monospace")
+
+    ax7.text(0.34, 0.40, "④ ENTROPIA-EFT  (live)", fontsize=10,
+             fontweight="bold", color="#1f77b4")
+    ax7.text(0.34, 0.30,
+             f"w(λ)      = {w_eff:+.12f}   [vac {W_VAC:+.10f}]",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.34, 0.22,
+             f"ζH/ρ(λ)   = {zeta_eff:+.6e}   [vac {ZETA_VAC:.6e}]",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.34, 0.14,
+             f"m_s(λ)    = {ms_eff:.6e}  eV [vac {MS_VAC:.4e}]",
+             fontsize=8.5, family="monospace")
+    ax7.text(0.34, 0.04,
+             f"H_loc/H_CMB = {H_BOOST:.10f}   α = {1/(16*np.pi**2):.8f}",
+             fontsize=8.5, family="monospace")
+
+    # Column 3
+    ax7.text(0.68, 0.86, "⑤ ENTROPIX/MESA", fontsize=10,
+             fontweight="bold", color="#2ca02c")
+    ax7.text(0.68, 0.76,
+             f"M1  ∂I_eff/∂λ  = {M1r:+.4e}   {'✓' if m1_ok else '✗'}",
+             fontsize=8.5, family="monospace",
+             color="green" if m1_ok else "red")
+    ax7.text(0.68, 0.68,
+             f"M2  ∂D/∂λ      = {M2v:.4e}    {'✓' if m2_ok else '✗'}",
+             fontsize=8.5, family="monospace",
+             color="green" if m2_ok else "red")
+    ax7.text(0.68, 0.60,
+             f"unique selector: regulated hyperscaling EE",
+             fontsize=8, family="monospace", style="italic")
+
+    ax7.text(0.68, 0.48, "⑥ SYK/QIN", fontsize=10,
+             fontweight="bold", color="#e377c2")
+    ax7.text(0.68, 0.38,
+             f"A({n1},{n2}) = ({ap1},{ap2})",
+             fontsize=8.5, family="monospace", color="magenta")
+    ax7.text(0.68, 0.30,
+             f"coherence f(λ) = {vac_f:.6f}",
+             fontsize=8.5, family="monospace", color="#e377c2")
+    ax7.text(0.68, 0.20,
+             "visible/hidden split: exact at equilibrium",
+             fontsize=8, family="monospace", style="italic")
+
+    ax7.text(0.68, 0.06,
+             "chain:  WIN(w=−1) → DME(γ) → Core(L[ε])\n"
+             "        → EFT(w,ζ,m_s) → ENTROPIX → SYK",
+             fontsize=8, family="monospace", color="#333",
+             bbox=dict(boxstyle="round", facecolor="#f0f4fa", alpha=0.9))
+
+    plt.show()
+
+# ------------------------------------------------------------
+# Interactive widget
+# ------------------------------------------------------------
+interact(
+    run_simulation,
+    mode_index=IntSlider(min=0, max=13, step=1, value=0,
+                         description="Mode",
+                         style={"description_width": "90px"}),
+    eps0=FloatSlider(min=-0.30, max=0.30, step=0.005, value=0.20,
+                     description="ε₀ (initial)",
+                     continuous_update=False,
+                     style={"description_width": "90px"}),
+    lam=FloatSlider(min=0.0, max=4.0, step=0.01, value=0.0,
+                    description="λ (flow)",
+                    continuous_update=True,
+                    style={"description_width": "90px"}),
+)
