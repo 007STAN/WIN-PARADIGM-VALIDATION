@@ -1,0 +1,483 @@
+# ============================================================
+# WIN PARADIGM — Widget #29
+# Flavor Sector Explorer — CKM / PMNS
+# ============================================================
+#
+# Layer 7 (flavor) of the WIN Paradigm.
+#
+# Physics from the CKM and PMNS papers:
+#
+#   Framework constants (shared with CKM):
+#     d = 4,   N = 64,   L = 8
+#     λ  = 2(L−1) = 14         (rank-1 coupling)
+#     a  = (d−1)/(d+1) = 3/5   (winding phase amplitude)
+#
+#   Mass map:
+#     m_i = A_mass · exp(−B_mass · (N/4)_i)
+#     A_mass = (2d−1)N/2 = 224
+#     B_mass = (d−1)k_L²/(2N²) = 0.541197
+#
+#   Charged lepton sector (e, μ, τ):
+#     N/4 = (24, 14, 9)
+#     s   = (+0.105198, +0.658283, +1.000000)
+#     (n₁,n₂) = (4,0), (3,7), (7,5)
+#
+#   Neutrino sector (three spin structures of ν):
+#     N/4 = (60, 60, 58)   =  (N−d, N−d, N−d−d/2)
+#     s   = −0.105198
+#
+#   Mass matrices:
+#     (M_ℓ)_ab = m_a δ_ab + λ(√m_a O_a)(√m_b O_b) e^{i a φ_ab}
+#     (M_ν)_ij = m_i δ_ij + λ(√m_i O_i)(√m_j O_j) e^{i φ_gen (i−j)}
+#
+#   PMNS matrix:
+#     V_PMNS = U_ℓ† U_ν   (via SVD)
+#
+#   Observed PMNS magnitudes (PDG 2024, normal ordering):
+#     |U_e1| = 0.825   |U_e2| = 0.545   |U_e3| = 0.149
+#     |U_μ1| = 0.271   |U_μ2| = 0.605   |U_μ3| = 0.749
+#     |U_τ1| = 0.495   |U_τ2| = 0.581   |U_τ3| = 0.646
+# ============================================================
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+from ipywidgets import interact, FloatSlider, Checkbox
+
+# ------------------------------------------------------------
+# Framework constants
+# ------------------------------------------------------------
+d, N, L = 4, 64, 8
+kL = 38.442527
+
+A_mass = (2 * d - 1) * N / 2
+B_mass = (d - 1) * kL**2 / (2 * N**2)
+
+LAMBDA_COUP = 2 * (L - 1)          # 14
+A_PHASE     = (d - 1) / (d + 1)    # 0.6
+
+# ------------------------------------------------------------
+# Lepton sector data
+# ------------------------------------------------------------
+N4_lep  = [24.0, 14.0, 9.0]
+s_lep   = [0.105198, 0.658283, 1.000000]
+coords_lep = [(4, 0), (3, 7), (7, 5)]
+labels_lep = ["e", "μ", "τ"]
+
+N4_nu = [60.0, 60.0, 58.0]
+s_nu  = -0.105198
+labels_nu = ["ν₁", "ν₂", "ν₃"]
+
+# ------------------------------------------------------------
+# Observed PMNS magnitudes (PDG 2024)
+# ------------------------------------------------------------
+PMNS_OBS = np.array([
+    [0.825, 0.545, 0.149],
+    [0.271, 0.605, 0.749],
+    [0.495, 0.581, 0.646],
+])
+
+# ------------------------------------------------------------
+# Mass map
+# ------------------------------------------------------------
+def mass_map(n4):
+    return A_mass * np.exp(-B_mass * np.asarray(n4, dtype=float))
+
+# ------------------------------------------------------------
+# Mass matrix builders
+# ------------------------------------------------------------
+def build_M_lep(w_l, a_phase):
+    masses = mass_map(N4_lep)
+    M = np.zeros((3, 3), dtype=complex)
+    for a in range(3):
+        M[a, a] = masses[a]
+        for b in range(3):
+            Oa = w_l * s_lep[a] + (1 - w_l) * N4_lep[a] / (N - d)
+            Ob = w_l * s_lep[b] + (1 - w_l) * N4_lep[b] / (N - d)
+            n1a, n2a = coords_lep[a]
+            n1b, n2b = coords_lep[b]
+            phi_ab = (np.pi / 8) * (n1a * n2b - n1b * n2a)
+            M[a, b] += (LAMBDA_COUP
+                        * (np.sqrt(masses[a]) * Oa)
+                        * (np.sqrt(masses[b]) * Ob)
+                        * np.exp(1j * a_phase * phi_ab))
+    return M
+
+def build_M_nu(w_nu, phi_gen_pi):
+    masses = mass_map(N4_nu)
+    M = np.zeros((3, 3), dtype=complex)
+    for i in range(3):
+        M[i, i] = masses[i]
+        for j in range(3):
+            Oi = w_nu * s_nu + (1 - w_nu) * N4_nu[i] / (N - d)
+            Oj = w_nu * s_nu + (1 - w_nu) * N4_nu[j] / (N - d)
+            phi_ij = phi_gen_pi * np.pi * (i - j)
+            M[i, j] += (LAMBDA_COUP
+                        * (np.sqrt(masses[i]) * Oi)
+                        * (np.sqrt(masses[j]) * Oj)
+                        * np.exp(1j * phi_ij))
+    return M
+
+# ------------------------------------------------------------
+# PMNS extraction via SVD
+# ------------------------------------------------------------
+def compute_pmns(w_l, w_nu, phi_gen_pi, a_phase):
+    M_l  = build_M_lep(w_l, a_phase)
+    M_nu = build_M_nu(w_nu, phi_gen_pi)
+    U_l, _, _  = np.linalg.svd(M_l)
+    U_nu, _, _ = np.linalg.svd(M_nu)
+    return U_l.conj().T @ U_nu
+
+def rms_pmns(V_mag, obs=PMNS_OBS):
+    return float(np.sqrt(np.mean((V_mag - obs)**2)))
+
+# ------------------------------------------------------------
+# Mixing angles from PMNS magnitudes
+# ------------------------------------------------------------
+def mixing_angles(V_mag):
+    s13 = np.clip(V_mag[0, 2], 0.0, 1.0)
+    theta13 = np.degrees(np.arcsin(s13))
+    c13 = np.sqrt(1.0 - s13**2) if s13 < 1.0 else 1e-12
+    s12 = np.clip(V_mag[0, 1] / c13, 0.0, 1.0)
+    theta12 = np.degrees(np.arcsin(s12))
+    s23 = np.clip(V_mag[1, 2] / c13, 0.0, 1.0)
+    theta23 = np.degrees(np.arcsin(s23))
+    return theta12, theta23, theta13
+
+def jarlskog(V):
+    J = np.imag(V[0, 0] * V[1, 1] * np.conj(V[0, 1]) * np.conj(V[1, 0]))
+    return float(J)
+
+# Observed angles for reference
+THETA12_OBS, THETA23_OBS, THETA13_OBS = 33.4, 49.2, 8.6
+J_OBS = -0.028  # approximate leptonic Jarlskog
+
+# ------------------------------------------------------------
+# The widget
+# ------------------------------------------------------------
+def run_flavor(w_l=0.70, w_nu=0.30, phi_gen=0.60, a_phase=0.60,
+               show_landscape=True, show_obs=True):
+    plt.close("all")
+
+    # ---- Live PMNS ----
+    V = compute_pmns(w_l, w_nu, phi_gen, a_phase)
+    V_mag = np.abs(V)
+    rms = rms_pmns(V_mag)
+    th12, th23, th13 = mixing_angles(V_mag)
+    J = jarlskog(V)
+
+    # ---- Mass values ----
+    m_lep = mass_map(N4_lep)
+    m_nu  = mass_map(N4_nu)
+
+    fig = plt.figure(figsize=(17, 15), facecolor="white")
+    fig.suptitle(
+        f"Flavor Sector  ·  PMNS from the 8×8 torus  ·  "
+        f"w_ℓ = {w_l:.3f},  w_ν = {w_nu:.3f},  "
+        f"φ_gen = {phi_gen:.3f}π,  a = {a_phase:.3f}   ·   "
+        f"RMS = {rms:.5f}",
+        fontsize=13, fontweight="bold", y=0.985,
+    )
+
+    # =========================================================
+    # Panel ① — WIN PMNS magnitudes (heatmap)
+    # =========================================================
+    ax1 = fig.add_axes([0.04, 0.70, 0.28, 0.25])
+    ax1.set_title("① WIN PMNS magnitudes  |V_PMNS|",
+                  fontsize=11, fontweight="bold", color="#1f77b4")
+
+    im1 = ax1.imshow(V_mag, cmap="Blues", vmin=0, vmax=1, aspect="auto")
+    ax1.set_xticks([0, 1, 2]); ax1.set_yticks([0, 1, 2])
+    ax1.set_xticklabels(["ν₁", "ν₂", "ν₃"], fontsize=10)
+    ax1.set_yticklabels(["e", "μ", "τ"], fontsize=10)
+
+    for i in range(3):
+        for j in range(3):
+            col = "white" if V_mag[i, j] > 0.55 else "black"
+            ax1.text(j, i, f"{V_mag[i, j]:.3f}",
+                     ha="center", va="center",
+                     fontsize=11, fontweight="bold", color=col)
+
+    # rms annotation
+    ax1.text(0.5, -0.22,
+             f"RMS vs PDG 2024 = {rms:.5f}",
+             transform=ax1.transAxes, ha="center",
+             fontsize=9, family="monospace",
+             bbox=dict(boxstyle="round", facecolor="lightyellow", alpha=0.9))
+
+    plt.colorbar(im1, ax=ax1, fraction=0.046, pad=0.04)
+
+    # =========================================================
+    # Panel ② — Observed PMNS (reference)
+    # =========================================================
+    ax2 = fig.add_axes([0.36, 0.70, 0.28, 0.25])
+    ax2.set_title("② Observed PMNS  (PDG 2024)",
+                  fontsize=11, fontweight="bold", color="#2ca02c")
+
+    im2 = ax2.imshow(PMNS_OBS, cmap="Greens", vmin=0, vmax=1, aspect="auto")
+    ax2.set_xticks([0, 1, 2]); ax2.set_yticks([0, 1, 2])
+    ax2.set_xticklabels(["ν₁", "ν₂", "ν₃"], fontsize=10)
+    ax2.set_yticklabels(["e", "μ", "τ"], fontsize=10)
+
+    for i in range(3):
+        for j in range(3):
+            col = "white" if PMNS_OBS[i, j] > 0.55 else "black"
+            ax2.text(j, i, f"{PMNS_OBS[i, j]:.3f}",
+                     ha="center", va="center",
+                     fontsize=11, fontweight="bold", color=col)
+
+    ax2.text(0.5, -0.22,
+             "reference values",
+             transform=ax2.transAxes, ha="center",
+             fontsize=9, family="monospace", color="#2ca02c")
+
+    plt.colorbar(im2, ax=ax2, fraction=0.046, pad=0.04)
+
+    # =========================================================
+    # Panel ③ — Signed residuals
+    # =========================================================
+    ax3 = fig.add_axes([0.68, 0.70, 0.28, 0.25])
+    ax3.set_title("③ Residual  (WIN − observed)",
+                  fontsize=11, fontweight="bold", color="#d62728")
+
+    resid = V_mag - PMNS_OBS
+    vmax = max(abs(resid.min()), abs(resid.max()), 0.05)
+    im3 = ax3.imshow(resid, cmap="RdBu_r", vmin=-vmax, vmax=vmax, aspect="auto")
+    ax3.set_xticks([0, 1, 2]); ax3.set_yticks([0, 1, 2])
+    ax3.set_xticklabels(["ν₁", "ν₂", "ν₃"], fontsize=10)
+    ax3.set_yticklabels(["e", "μ", "τ"], fontsize=10)
+
+    for i in range(3):
+        for j in range(3):
+            ax3.text(j, i, f"{resid[i, j]:+.3f}",
+                     ha="center", va="center",
+                     fontsize=11, fontweight="bold", color="black")
+
+    ax3.text(0.5, -0.22,
+             f"max |residual| = {np.max(np.abs(resid)):.4f}",
+             transform=ax3.transAxes, ha="center",
+             fontsize=9, family="monospace", color="#d62728")
+
+    plt.colorbar(im3, ax=ax3, fraction=0.046, pad=0.04)
+
+    # =========================================================
+    # Panel ④ — Element-by-element bar comparison
+    # =========================================================
+    ax4 = fig.add_axes([0.04, 0.40, 0.44, 0.24])
+    ax4.set_title("④ Element-by-element comparison",
+                  fontsize=11, fontweight="bold", color="#9467bd")
+
+    element_labels = [
+        "U_e1", "U_e2", "U_e3",
+        "U_μ1", "U_μ2", "U_μ3",
+        "U_τ1", "U_τ2", "U_τ3",
+    ]
+    win_flat = V_mag.flatten()
+    obs_flat = PMNS_OBS.flatten()
+
+    x = np.arange(9)
+    width = 0.38
+
+    ax4.bar(x - width/2, win_flat, width,
+            label="WIN", color="#1f77b4",
+            edgecolor="black", linewidth=1.2)
+    ax4.bar(x + width/2, obs_flat, width,
+            label="observed", color="#2ca02c",
+            edgecolor="black", linewidth=1.2)
+
+    for i in range(9):
+        delta = win_flat[i] - obs_flat[i]
+        col = "red" if abs(delta) > 0.03 else "#666"
+        ax4.text(i, max(win_flat[i], obs_flat[i]) + 0.03,
+                 f"{delta:+.3f}", ha="center", fontsize=7.5,
+                 color=col, family="monospace")
+
+    ax4.set_xticks(x)
+    ax4.set_xticklabels(element_labels, fontsize=8.5, rotation=0)
+    ax4.set_ylim(0, 1.05)
+    ax4.set_ylabel("magnitude", fontsize=9)
+    ax4.grid(True, alpha=0.3, axis="y")
+    ax4.legend(fontsize=8, loc="upper right")
+
+    # =========================================================
+    # Panel ⑤ — RMS landscape in (w_ℓ, w_ν)
+    # =========================================================
+    ax5 = fig.add_axes([0.55, 0.40, 0.41, 0.24])
+    ax5.set_title("⑤ RMS landscape  over (w_ℓ, w_ν)",
+                  fontsize=11, fontweight="bold", color="#ff7f0e")
+
+    if show_landscape:
+        wl_grid = np.linspace(0.55, 0.85, 13)
+        wn_grid = np.linspace(0.15, 0.45, 13)
+        landscape = np.zeros((13, 13))
+
+        for i, wl in enumerate(wl_grid):
+            for j, wn in enumerate(wn_grid):
+                Vg = compute_pmns(wl, wn, phi_gen, a_phase)
+                landscape[j, i] = rms_pmns(np.abs(Vg))
+
+        im5 = ax5.imshow(
+            landscape,
+            extent=[wl_grid[0], wl_grid[-1], wn_grid[0], wn_grid[-1]],
+            origin="lower", cmap="viridis_r",
+            aspect="auto",
+        )
+        plt.colorbar(im5, ax=ax5, fraction=0.046, pad=0.04,
+                     label="RMS")
+
+        # reference points
+        ax5.scatter([0.70], [0.30], s=180, marker="*",
+                    color="red", edgecolors="white", linewidths=1.5,
+                    zorder=6, label="(3/10, 7/10)")
+        ax5.scatter([w_l], [w_nu], s=200, marker="o",
+                    facecolors="none", edgecolors="gold",
+                    linewidths=2.5, zorder=6, label="current")
+
+        ax5.set_xlabel("w_ℓ  (lepton weight)", fontsize=9)
+        ax5.set_ylabel("w_ν  (neutrino weight)", fontsize=9)
+        ax5.legend(fontsize=8, loc="upper right")
+
+        # find minimum
+        idx = np.unravel_index(np.argmin(landscape), landscape.shape)
+        wl_best = wl_grid[idx[1]]
+        wn_best = wn_grid[idx[0]]
+        rms_best = landscape[idx]
+        ax5.text(0.02, 0.05,
+                 f"grid min: RMS = {rms_best:.5f}\n"
+                 f"at (w_ℓ, w_ν) = ({wl_best:.3f}, {wn_best:.3f})",
+                 transform=ax5.transAxes, fontsize=8,
+                 family="monospace",
+                 bbox=dict(boxstyle="round", facecolor="lightyellow",
+                           alpha=0.9))
+    else:
+        ax5.text(0.5, 0.5,
+                 "landscape computation disabled",
+                 ha="center", va="center", fontsize=12,
+                 transform=ax5.transAxes, color="#888")
+
+    # =========================================================
+    # Panel ⑥ — Mixing angles + CP phase
+    # =========================================================
+    ax6 = fig.add_axes([0.04, 0.05, 0.44, 0.30])
+    ax6.set_title("⑥ Mixing angles and CP phase",
+                  fontsize=11, fontweight="bold", color="#e377c2")
+    ax6.set_xlim(0, 1); ax6.set_ylim(0, 1); ax6.axis("off")
+
+    # θ12
+    ax6.text(0.03, 0.94, "θ₁₂  (solar)",
+             fontsize=10, fontweight="bold", color="#e377c2")
+    ax6.text(0.03, 0.86,
+             f"WIN = {th12:.2f}°     observed = {THETA12_OBS:.1f}°     "
+             f"Δ = {th12 - THETA12_OBS:+.2f}°",
+             fontsize=9, family="monospace")
+
+    # θ23
+    ax6.text(0.03, 0.74, "θ₂₃  (atmospheric)",
+             fontsize=10, fontweight="bold", color="#e377c2")
+    ax6.text(0.03, 0.66,
+             f"WIN = {th23:.2f}°     observed = {THETA23_OBS:.1f}°     "
+             f"Δ = {th23 - THETA23_OBS:+.2f}°",
+             fontsize=9, family="monospace")
+
+    # θ13
+    ax6.text(0.03, 0.54, "θ₁₃  (reactor)",
+             fontsize=10, fontweight="bold", color="#e377c2")
+    ax6.text(0.03, 0.46,
+             f"WIN = {th13:.2f}°     observed = {THETA13_OBS:.1f}°     "
+             f"Δ = {th13 - THETA13_OBS:+.2f}°",
+             fontsize=9, family="monospace")
+
+    # Jarlskog
+    ax6.text(0.03, 0.34, "Jarlskog invariant  J",
+             fontsize=10, fontweight="bold", color="#e377c2")
+    ax6.text(0.03, 0.26,
+             f"WIN = {J:+.5f}     observed ≈ {J_OBS:+.3f}",
+             fontsize=9, family="monospace")
+
+    # status
+    angles_ok = (abs(th12 - THETA12_OBS) < 2 and
+                 abs(th23 - THETA23_OBS) < 2 and
+                 abs(th13 - THETA13_OBS) < 1)
+    ax6.text(0.03, 0.12,
+             "✓  all angles within 2°" if angles_ok
+             else "⚠  some angles off by >2°",
+             fontsize=10, fontweight="bold",
+             color="green" if angles_ok else "orange")
+
+    # =========================================================
+    # Panel ⑦ — N/4 spectra visualization
+    # =========================================================
+    ax7 = fig.add_axes([0.55, 0.05, 0.41, 0.30])
+    ax7.set_title("⑦ N/4 spectra  —  quark vs lepton vs neutrino",
+                  fontsize=11, fontweight="bold", color="#1f77b4")
+
+    # Data (quark from CKM paper)
+    N4_u = [21.0, 9.5, 0.5]
+    N4_d = [20.0, 14.0, 7.5]
+    N4_e = N4_lep
+    N4_n = N4_nu
+
+    sectors = [
+        ("up",      N4_u, "#d62728"),
+        ("down",    N4_d, "#ff7f0e"),
+        ("lepton",  N4_e, "#2ca02c"),
+        ("neutrino", N4_n, "#1f77b4"),
+    ]
+
+    for k, (name, n4, col) in enumerate(sectors):
+        y = 3 - k
+        for j, v in enumerate(n4):
+            ax7.barh(y, v, height=0.55, left=j * 65,
+                     color=col, alpha=0.75,
+                     edgecolor="black", linewidth=1.0)
+            ax7.text(j * 65 + v / 2, y, f"{v:.1f}",
+                     ha="center", va="center",
+                     fontsize=8, fontweight="bold",
+                     color="white")
+        ax7.text(-2, y, name, ha="right", va="center",
+                 fontsize=9, fontweight="bold", color=col)
+
+    ax7.set_yticks([])
+    ax7.set_xlim(-15, 200)
+    ax7.set_xlabel("N/4  (information capacity)", fontsize=9)
+    ax7.grid(True, alpha=0.3, axis="x")
+
+    ax7.text(0.55, 0.90,
+             "quarks: hierarchical N/4\n"
+             "neutrinos: nearly degenerate\n"
+             "→ large PMNS angles",
+             transform=ax7.transAxes, fontsize=8.5,
+             family="monospace",
+             bbox=dict(boxstyle="round", facecolor="#e6f0fa",
+                       alpha=0.9))
+
+    plt.show()
+
+# ------------------------------------------------------------
+# Interactive widget
+# ------------------------------------------------------------
+interact(
+    run_flavor,
+    w_l=FloatSlider(min=0.55, max=0.85, step=0.005, value=0.70,
+                    description="w_ℓ",
+                    continuous_update=False,
+                    style={"description_width": "110px"}),
+    w_nu=FloatSlider(min=0.15, max=0.45, step=0.005, value=0.30,
+                     description="w_ν",
+                     continuous_update=False,
+                     style={"description_width": "110px"}),
+    phi_gen=FloatSlider(min=0.30, max=0.90, step=0.01, value=0.60,
+                        description="φ_gen / π",
+                        continuous_update=False,
+                        style={"description_width": "110px"}),
+    a_phase=FloatSlider(min=0.30, max=0.90, step=0.01, value=0.60,
+                        description="a  (winding)",
+                        continuous_update=False,
+                        style={"description_width": "110px"}),
+    show_landscape=Checkbox(value=True,
+                            description="RMS landscape",
+                            indent=False),
+    show_obs=Checkbox(value=True,
+                      description="Reference observed values",
+                      indent=False),
+)
