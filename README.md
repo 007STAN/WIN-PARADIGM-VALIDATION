@@ -622,3 +622,182 @@ Citation
   note   = {WIN Paradigm White Paper},
   url    = {https://github.com/007STAN/FDLM-VALIDATION}
 }
+<div align="center">
+
+# FDLM: The Four-Dimension Lattice Model
+
+### A philosophical and mechanical overview
+
+*© 2026 Stanley Preschutti · Entropia Research Institute / Information Physics Institute*
+
+</div>
+
+---
+
+## What it is
+
+FDLM is a claim about what physics **is**.
+
+It says that the universe is not made of particles, fields, or spacetime. It is made of a **substrate** — a small, discrete, information-bearing structure — and everything we call physics is what that substrate **cannot cancel**.
+
+The framework starts with a single input: **the number of dimensions we live in**. Not assumed. Derived. A massless spin-1 particle has two helicity states, each described by a complex amplitude with two real components. Two helicities, two real components each, four real numbers. Rotate that four-dimensional phase space from Euclidean to Lorentzian signature, and out comes the four-dimensional spacetime we inhabit. The number four is not an input to the framework. It is a **consequence of the photon**.
+
+From there, the framework unfolds.
+
+---
+
+## The substrate
+
+The substrate is a **lattice**: a small, periodic, two-dimensional grid of information-bearing sites. Not a spatial grid — a **structural** one. A lattice of possibilities, each cell a place where information can be stored, exchanged, and cancelled.
+
+The size of the lattice is not chosen. It is **forced** by the dimension count. The number of sites is fixed by the requirement that the lattice's spectrum carry exactly the particle content the Standard Model demands. This is one of the framework's central structural moves: the substrate is not selected by hand, it is derived from the count of particles we observe.
+
+The lattice has a **mirror symmetry**. Every excitation on the lattice has a partner — its mirror image under a half-turn of the grid. Most of these pairs cancel. The mirror symmetry is not a curiosity of the framework; it is the machine's core operating principle.
+
+---
+
+## What physics is
+
+Physics is the **residue of a cancellation**.
+
+The lattice is full of excitations. Each excitation pairs with its mirror. The paired modes have equal weight, opposite phase, and they cancel. What survives — what does not cancel — is the physical world.
+
+The particles we see are the modes that have no mirror partner to cancel against. They are the **self-paired residual** of the substrate. They are not created by the lattice; they are the lattice's leftovers after the substrate has cancelled everything it can.
+
+The Standard Model's particle content — the quarks, leptons, gauge bosons, and Higgs — emerges at one specific spectral midpoint of the lattice, where exactly the right number of modes survive the mirror cancellation. Not too many, not too few. Fourteen. One generation.
+
+The three generations come from the same structure. The lattice does not need to be told there are three generations. The number three appears as a **structural consequence** of the lattice's geometry, not as an input.
+
+---
+
+## How forces work
+
+Forces are **patterns of cancellation**.
+
+In the Standard Model, forces are transmitted by gauge bosons — carriers that move between particles. In FDLM, forces are the substrate's local response to imbalance. When a region of the lattice carries a net imbalance in some quantum number, the substrate's mirror structure propagates a restoration. The propagated restoration is what we call a force.
+
+The gauge algebra of the Standard Model — the strong, weak, and hypercharge structures — emerges from how the lattice organizes its own cancellation. The framework does not assume the gauge group; it derives it from the representation theory of the substrate's symmetry.
+
+The forces are not separate things acting on separate particles. They are different **channels** of the same substrate. The strong force, the weak force, and electromagnetism are the three-dimensional projection of a single higher-dimensional cancellation pattern.
+
+---
+
+## How gravity works
+
+Gravity is the **substrate's self-correction**.
+
+The lattice has one structural condition it must satisfy everywhere: the mirror cancellation. In empty space, this is satisfied identically. When a mass is present, the local mode content shifts — the self-paired residual is locally enhanced — and the mirror cancellation is locally disturbed.
+
+The substrate's response is to restore the imbalance. This restoration propagates as the **graviton**. What we call gravity is the propagating wave of the substrate's self-repair.
+
+Three claims follow, and each is a theorem of the framework:
+
+- **Every mass attracts every other mass.** Every mass disturbs the cancellation in the same direction. There is no gravitational charge because there is no asymmetry.
+- **The force law is the inverse-square law.** The restoration is sourced by a point-like defect in the local mirror pairing, and the flux through a surface is conserved by the substrate's geometry.
+- **All matter responds identically.** The substrate's inner product is the same for every mode. Universality is not an empirical fact — it is a structural property of the machine.
+
+The graviton is not a fundamental field. It is a **mode of the substrate's operation**. Its job is to keep the machine consistent with itself.
+
+---
+
+## Why the universe is four-dimensional
+
+The framework derives four-dimensional spacetime not once but **three times**, from three independent anchors:
+
+- **From the photon.** Two helicity states with two real components each produce a four-dimensional phase space whose rotation gives four-dimensional spacetime.
+- **From entropy.** Among all sizes of the substrate's lattice, only one produces the equally-spaced entropy classes that the Standard Model requires. That size selects four dimensions.
+- **From topology.** The kernel of the substrate's natural differential operator is exactly four-dimensional. The four harmonic forms it contains are the four spacetime directions.
+
+The three anchors are independent. They agree. The universe is four-dimensional because the substrate has no other choice.
+
+---
+
+## Why time flows
+
+Time is not an external parameter. It is a **readout of the machine**.
+
+The substrate processes itself in layers: the lattice, the dimensional stability sector, the coarse-graining flow, the effective field theory, and finally the processor. Together they form a **loop** — a closed cycle through which information passes.
+
+Each pass through the loop accumulates a **phase**. The phase is the clock. Each pass also **decays** the loop's amplitude. The decay is the arrow.
+
+Time is the number of passes. The arrow of time is the direction in which the loop's informational content decreases. Both emerge from a single operation: the loop observing itself.
+
+---
+
+## Why the vacuum has an equation of state
+
+The universe's vacuum is not empty. It has a **preferred state** — a specific balance between expansion and structure. The framework derives this balance from the same loop that produces time.
+
+The vacuum's equation of state emerges as the framework's baseline: a value slightly offset from pure cosmological constant, derivable from the substrate's dimensional stability. The prediction is testable by current cosmological surveys.
+
+---
+
+## What is derived
+
+A summary, without mathematics:
+
+- **The number of dimensions.** From the photon, from entropy, from topology.
+- **The size of the substrate.** From the particle count.
+- **The particle content.** Fourteen modes at a specific spectral midpoint.
+- **The gauge structure.** From the substrate's symmetry.
+- **The generations.** Three, from the lattice's geometry.
+- **The particle masses.** Across six orders of magnitude, without fitted parameters.
+- **The mixing matrices.** Quark and lepton, from the substrate's mode misalignment.
+- **The Higgs mass.** To a tenth of a percent.
+- **The weak mixing angle.** To a hundredth of a percent.
+- **The graviton.** As the self-paired curvature mode of the substrate's wave sector.
+- **The dimensional uplift.** Four-dimensional spacetime from the substrate's topology.
+- **The Newton constant.** Its normalization derived from the substrate's hidden sector.
+- **Time and its arrow.** As the loop's complex eigenvalue.
+- **Motion.** As the winding phase of the substrate's mode coordinates.
+
+---
+
+## What is open
+
+The framework is honest about its limits:
+
+- **The path-integral completion.** The structural origin of the Newton constant is derived; the full path-integral evaluation on the discrete substrate remains to be completed.
+- **The Lorentzian signature.** The dimension is derived; the signature is inherited from the photon-helicity anchor rather than derived from the substrate alone.
+- **The nonlinear Einstein equations.** The linearized theory is derived; the nonlinear completion is open.
+- **The full unification proof.** That the framework is logically forced — rather than one of several consistent possibilities — remains to be shown.
+
+These are not gaps in the framework. They are the frontier.
+
+---
+
+## What it is not
+
+FDLM is not string theory. It does not begin with vibrating strings, and it does not require extra dimensions to be compactified.
+
+FDLM is not loop quantum gravity. It does not quantize geometry, and it does not begin with spin networks.
+
+FDLM is not the Standard Model with decorations. It derives what the Standard Model assumes. It does not add parameters to the Standard Model; it removes them.
+
+FDLM is not a theory of everything in the usual sense. It is a theory of **why there is a universe to have a theory of** — a claim about what physics is, from which the structure of physics follows.
+
+---
+
+## Why it matters
+
+The Standard Model is the most precise theory in the history of science. It describes electromagnetism, the weak force, and the strong force to twelve significant figures. It has been tested to extraordinary precision and has never failed.
+
+But the Standard Model assumes its own structure. It assumes the gauge group, the number of generations, the particle content, and the values of its own parameters. It does not explain why they are what they are.
+
+FDLM is an attempt to explain why. It takes the observed structure of the Standard Model — the specific gauge group, the three generations, the fourteen particles — and asks: **what substrate could produce this and only this?** The framework's answer is a small, discrete, information-bearing lattice whose mirror cancellation leaves exactly the residue we call physics.
+
+The framework is not a replacement for the Standard Model. It is a **foundation** for it. The Standard Model is what the substrate looks like when you observe it. FDLM is what the substrate is.
+
+---
+
+## The one-line summary
+
+> **Physics is what the machine cannot cancel. FDLM is the machine.**
+
+---
+
+<div align="center">
+
+**Status:** Under independent verification · [Repository](https://github.com/007STAN/FDLM-VALIDATION) · ORCID [0009-0004-5445-1744](https://orcid.org/0009-0004-5445-1744)
+
+</div>
